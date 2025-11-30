@@ -1,0 +1,129 @@
+---
+const year = new Date().getFullYear();
+---
+
+<header class="l-header">
+  <div class="l-header__inner">
+
+    <div class="l-header__left">
+      <p class="l-header__label">Generative AI work</p>
+      <small class="l-header__meta">©{year} SPOT-AI</small>
+    </div>
+
+    <div class="l-header__center">
+      <a href="/" class="l-header__title">SPOT-AI</a>
+    </div>
+
+    <div class="l-header__right">
+      <a href="/info/" class="l-header__link">
+        INFO
+      </a>
+    </div>
+
+  </div>
+</header>
+
+<style>
+  .l-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 100;
+    padding-top: 20px;
+    padding-inline: var(--app-grid-padding);
+    box-sizing: border-box;
+
+    font-family: 'Lato', sans-serif;
+    color: var(--system-color);
+    line-height: 1.2;
+  }
+
+  .l-header__inner {
+    position: relative; 
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    width: 100%;
+    max-width: 1800px;
+    margin: 0 auto;
+  }
+
+  .l-header__left {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    z-index: 2;
+  }
+
+  .l-header__label {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+  }
+
+  .l-header__meta {
+    font-size: 11px;
+    opacity: 0.7;
+    margin: 0;
+    display: block;
+  }
+
+  .l-header__center {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    top: 0;
+    text-align: center;
+    z-index: 1;
+  }
+
+  .l-header__title {
+    font-size: 20px;
+    font-weight: 400;
+    text-decoration: none;
+    color: currentColor;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    transition: opacity 0.3s ease;
+  }
+
+  .l-header__title:hover {
+    opacity: 0.7;
+  }
+
+  .l-header__right {
+    z-index: 2;
+    text-align: right;
+  }
+
+  .l-header__link {
+    text-decoration: none;
+    color: currentColor;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    position: relative;
+    transition: opacity 0.3s ease;
+  }
+
+  .l-header__link:hover {
+    opacity: 0.7;
+  }
+
+  @media (max-width: 640px) {
+    .l-header {
+        padding-top: 20px;
+        padding-inline: 20px;
+    }
+    
+    .l-header__title {
+        font-size: 16px;
+    }
+    
+    .l-header__label, .l-header__link {
+        font-size: 11px;
+    }
+  }
+</style>
