@@ -1,21 +1,233 @@
 ---
+// src/pages/index.astro
 import BaseLayout from "../layouts/BaseLayout.astro"
 import Header from "../components/Header.astro"
+
+const images = Array.from({ length: 27 }, (_, i) => i + 1);
+const formatNum = (num: number) => num.toString().padStart(2, '0');
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<BaseLayout title="Inicio">
-			<Header>
-				
-			</Header>
-		</BaseLayout>
-	</body>
-</html>
+<BaseLayout title="Curaffy - Generative AI Work">
+  
+  <Header />
+
+  <main class="l-main">
+    
+
+    <div class="l-main__left">
+
+      <div class="c-center-decoration">
+        <span class="c-center-label">(Selected)</span>
+        <div class="c-center-numbers">
+          <p class="is-active">01</p>
+          <p class="u-faded">02</p>
+        </div>
+      </div>
+
+      <div class="c-info-grid">
+        <div class="c-info-col">
+          <span class="u-label">(Overview)</span>
+          <p>An image created with generative AI</p>
+          <p>Carefully selected works</p>
+          <p class="u-faded">CPersonal hobby works</p>
+        </div>
+
+        <div class="c-info-col">
+          <span class="u-label">(Tech)</span>
+          <p>Lummi</p>
+          <p>Midjourney</p>
+        </div>
+
+        <div class="c-info-col">
+          <span class="u-label">(Other)</span>
+          <p>01:57:59</p>
+          <p>Wednesday</p>
+        </div>
+
+        <div class="c-info-col">
+          <span class="u-label">(Attention)</span>
+          <p>↪ Click Image</p>
+        </div>
+      </div>
+      
+    </div>
+
+    <!-- COLUMNA DERECHA (SCROLL) -->
+    <div class="l-main__right">
+      <div class="c-gallery">
+        {images.map((num) => (
+          <a href={`/${formatNum(num)}/`} class="c-gallery__item">
+            <div class="c-gallery__image-wrapper">
+              <img 
+                src={`/webp/image${formatNum(num)}.webp`} 
+                alt={`Art ${formatNum(num)}`}
+                loading="lazy" 
+              />
+            </div>
+            <span class="c-gallery__number-mobile">{formatNum(num)}</span>
+          </a>
+        ))}
+      </div>
+    </div>
+
+  </main>
+</BaseLayout>
+
+<style>
+
+  .l-main {
+    display: flex;
+    width: 100%;
+    position: relative;
+  }
+
+  .l-main__left {
+    width: 50%;
+    height: 100vh;
+    position: sticky;
+    top: 0;
+    
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    
+    padding: var(--app-grid-padding);
+    padding-bottom: 60px;
+    box-sizing: border-box;
+    z-index: 10;
+  }
+
+  .l-main__right {
+    width: 50%;
+    background-color: var(--system-background-color); 
+    padding-top: 15vh;
+    padding-bottom: 15vh;
+    box-sizing: border-box;
+  }
+
+  .c-center-decoration {
+    position: absolute;
+    top: 50%;
+    right: 0;
+    transform: translateY(-50%) translateX(50%);
+    text-align: center;
+    pointer-events: none;
+    z-index: 20;
+    mix-blend-mode: difference;
+  }
+
+  .c-center-label {
+    display: block;
+    font-size: 12px;
+    margin-bottom: 20px;
+    opacity: 0.6;
+    transform: translateX(-150%); 
+    text-align: right;
+  }
+
+  .c-center-numbers {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    font-size: 4rem;
+    line-height: 1;
+    font-weight: 300;
+  }
+
+  .c-center-numbers .is-active {
+    color: #fff;
+  }
+
+  .c-info-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    width: 100%;
+    font-size: 11px;
+    line-height: 1.6;
+    letter-spacing: 0.02em;
+  }
+
+  .c-info-col {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .u-label {
+    opacity: 0.4;
+    margin-bottom: 10px;
+    display: block;
+  }
+
+  .c-gallery {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 120px;
+    padding-inline: 60px;
+  }
+
+  .c-gallery__item {
+    display: block;
+    width: 100%;
+    max-width: 650px;
+    text-decoration: none;
+    position: relative;
+  }
+
+  .c-gallery__image-wrapper {
+    width: 100%;
+    aspect-ratio: 4/5;
+    overflow: hidden;
+    background-color: #111;
+  }
+
+  .c-gallery__image-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.7s cubic-bezier(0.2, 1, 0.3, 1);
+  }
+  .c-gallery__item:hover .c-gallery__image-wrapper img {
+    transform: scale(1.04);
+  }
+
+  .c-gallery__number-mobile {
+    display: none;
+  }
+
+  /* --- RESPONSIVE (MÓVIL) --- */
+  @media (max-width: 900px) {
+    .l-main {
+      flex-direction: column;
+    }
+
+    .l-main__left {
+      display: none;
+    }
+
+    .l-main__right {
+      width: 100%;
+      padding-top: 100px;
+      padding-inline: 20px;
+    }
+
+    .c-gallery {
+      padding-inline: 0;
+      gap: 60px;
+    }
+
+    .c-gallery__number-mobile {
+      display: block;
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(0,0,0,0.6);
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+  }
+</style>
