@@ -13,50 +13,57 @@ const formatNum = (num: number) => num.toString().padStart(2, '0');
 
   <main class="l-main">
     
-
     <div class="l-main__left">
 
       <div class="c-center-decoration">
         <span class="c-center-label">(Selected)</span>
-        <div class="c-center-numbers">
-          <p class="is-active">01</p>
-          <p class="u-faded">02</p>
+        
+        <!-- RUEDA -->
+        <div class="c-wheel">
+          <div class="c-wheel__line"></div>
+          
+          <div class="c-wheel__window">
+            <div class="c-wheel__strip js-wheel-strip">
+              {images.map((num) => (
+                <div class="c-wheel__item" data-wheel-index={num}>
+                  {formatNum(num)}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
       <div class="c-info-grid">
         <div class="c-info-col">
           <span class="u-label">(Overview)</span>
-          <p>An image created with generative AI</p>
-          <p>Carefully selected works</p>
-          <p class="u-faded">CPersonal hobby works</p>
+          <p>Generative AI Series</p>
+          <p>Curated Collection</p>
+          <p class="u-faded">Personal Work</p>
         </div>
-
         <div class="c-info-col">
           <span class="u-label">(Tech)</span>
           <p>Lummi</p>
           <p>Midjourney</p>
         </div>
-
         <div class="c-info-col">
-          <span class="u-label">(Other)</span>
-          <p>01:57:59</p>
-          <p>Wednesday</p>
+          <span class="u-label">(Info)</span>
+          <p>27 Items</p>
+          <p>2024</p>
         </div>
-
         <div class="c-info-col">
-          <span class="u-label">(Attention)</span>
-          <p>↪ Click Image</p>
+          <span class="u-label">(Action)</span>
+          <p>↪ Scroll to Explore</p>
         </div>
       </div>
       
     </div>
 
-    <!-- COLUMNA DERECHA (SCROLL) -->
+    <!-- GALERÍA -->
     <div class="l-main__right">
       <div class="c-gallery">
         {images.map((num) => (
-          <a href={`/${formatNum(num)}/`} class="c-gallery__item">
+          <a href={`/${formatNum(num)}/`} class="c-gallery__item js-gallery-item">
             <div class="c-gallery__image-wrapper">
               <img 
                 src={`/webp/image${formatNum(num)}.webp`} 
@@ -73,161 +80,205 @@ const formatNum = (num: number) => num.toString().padStart(2, '0');
   </main>
 </BaseLayout>
 
-<style>
+<script>
+  // Lógica de Sincronización Scroll-Rueda
+  const wheelStrip = document.querySelector('.js-wheel-strip') as HTMLElement;
+  const wheelItems = document.querySelectorAll('.c-wheel__item');
+  const galleryItems = document.querySelectorAll('.js-gallery-item');
+  
+  let pixelsPerIndex = 0;
+  let wheelItemHeight = 0;
 
-  .l-main {
-    display: flex;
-    width: 100%;
-    position: relative;
+  // Función para recalcular métricas (al inicio y al cambiar tamaño de ventana)
+  function updateMetrics() {
+    if (galleryItems.length > 1 && wheelItems.length > 0) {
+      // 1. Calculamos la distancia visual entre la imagen 1 y la imagen 2
+      // Esto nos dice cuántos píxeles de scroll equivalen a "1 unidad" de avance en la rueda.
+      const firstRect = galleryItems[0].getBoundingClientRect();
+      const secondRect = galleryItems[1].getBoundingClientRect();
+      // La distancia incluye la altura de la imagen + el gap
+      pixelsPerIndex = secondRect.top - firstRect.top;
+
+      // 2. Altura de cada número en la rueda (4rem según CSS, aprox 64px)
+      wheelItemHeight = (wheelItems[0] as HTMLElement).offsetHeight;
+    }
   }
 
-  .l-main__left {
-    width: 50%;
-    height: 100vh;
-    position: sticky;
-    top: 0;
+  // Bucle de animación (se ejecuta en cada frame para suavidad máxima)
+  function rafLoop() {
+    if (!pixelsPerIndex || !wheelStrip) return;
+
+    const viewportCenter = window.innerHeight / 2;
+    const firstItem = galleryItems[0];
+    const firstRect = firstItem.getBoundingClientRect();
     
+    // Calculamos el centro de la primera imagen
+    const firstItemCenter = firstRect.top + (firstRect.height / 2);
+
+    // Distancia desde el centro de la primera imagen al centro de la pantalla
+    // Si es 0, estamos viendo la imagen 1. Si es negativo, hemos scrolleado hacia abajo.
+    const distFromCenter = firstItemCenter - viewportCenter;
+
+    // Convertimos esa distancia en un "índice flotante"
+    // El -1 es porque al scrollear hacia abajo (dist negativo), queremos que el índice aumente
+    let rawIndex = (distFromCenter * -1) / pixelsPerIndex;
+
+    // Límites: no bajar de 0 ni subir del máximo
+    const maxIndex = galleryItems.length - 1;
+    rawIndex = Math.max(0, Math.min(rawIndex, maxIndex));
+
+    // MOVER LA RUEDA
+    // Multiplicamos el índice exacto (ej: 1.54) por la altura de los números
+    const translateY = rawIndex * wheelItemHeight * -1;
+    wheelStrip.style.transform = `translate3d(0, ${translateY}px, 0)`;
+
+    // EFECTOS VISUALES EN LOS NÚMEROS (Opacidad / Color)
+    wheelItems.forEach((item, i) => {
+      // Distancia entre este número y el índice actual flotante
+      const distance = Math.abs(i - rawIndex);
+      
+      // Lógica de estilo:
+      // Si distance < 0.5, es el número "activo" (casi centrado)
+      // Si distance está entre 0.5 y 1.5, es el "siguiente" o "anterior"
+      
+      const el = item as HTMLElement;
+      
+      // Limpiamos estilos manuales previos para usar clases base si quieres,
+      // pero aquí aplicaremos opacidad dinámica para mayor suavidad.
+      
+      if (distance < 0.5) {
+        // ACTIVO (Blanco puro)
+        el.style.opacity = '1';
+        el.style.transform = 'scale(1)';
+        el.style.color = '#fff';
+      } else if (distance < 1.5) {
+        // EL SIGUIENTE (Grisaceo, semitransparente)
+        // Calculamos opacidad inversa a la distancia
+        const opacity = 1 - (distance - 0.5); 
+        el.style.opacity = Math.max(0.2, opacity).toString();
+        el.style.transform = 'scale(0.95)'; // Un poco más pequeño
+        el.style.color = 'rgba(255,255,255,0.5)';
+      } else {
+        // INACTIVOS (Ocultos o muy tenues)
+        el.style.opacity = '0.05';
+        el.style.transform = 'scale(0.9)';
+        el.style.color = 'rgba(255,255,255,0.2)';
+      }
+    });
+
+    requestAnimationFrame(rafLoop);
+  }
+
+  // Inicialización
+  window.addEventListener('load', () => {
+    updateMetrics();
+    requestAnimationFrame(rafLoop);
+  });
+  
+  window.addEventListener('resize', updateMetrics);
+</script>
+
+<style>
+  /* --- ESTILOS RUEDA --- */
+  .c-wheel {
+    position: relative;
+    display: flex;
+    align-items: center;
+    /* Altura para mostrar aprox 2 números (el actual y el que entra) */
+    height: 5rem; 
+    overflow: hidden;
+    /* Máscara de gradiente para que los números desaparezcan suavemente arriba y abajo */
+    mask-image: linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%);
+  }
+
+  .c-wheel__line {
+    width: 1px;
+    height: 100%;
+    background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.5) 20%, rgba(255,255,255,0.5) 80%, transparent);
+    margin-right: 20px;
+  }
+
+  .c-wheel__window {
+    height: 100%;
+    position: relative;
+    /* Importante: para que los números giren sobre su eje central visualmente */
+    margin-top: -0.2em; 
+  }
+
+  .c-wheel__strip {
+    will-change: transform;
+    /* Eliminamos transiciones CSS aquí porque JS controla la posición frame a frame */
     display: flex;
     flex-direction: column;
-    justify-content: flex-end;
+  }
+
+  .c-wheel__item {
+    height: 4rem; /* Altura fija para cálculos JS */
+    font-size: 4rem;
+    line-height: 4rem; /* Centrado vertical */
+    font-weight: 300;
+    color: rgba(255, 255, 255, 0.2);
+    font-variant-numeric: tabular-nums;
+    transform-origin: left center;
+    white-space: nowrap;
     
-    padding: var(--app-grid-padding);
-    padding-bottom: 60px;
-    box-sizing: border-box;
-    z-index: 10;
+    /* Transición suave solo para colores/opacidad, NO para movimiento */
+    transition: color 0.1s, opacity 0.1s, transform 0.1s; 
+  }
+
+  /* --- RESTO DEL LAYOUT (Mismos estilos básicos) --- */
+  .l-main { display: flex; width: 100%; position: relative; }
+
+  .l-main__left {
+    width: 50%; height: 100vh; position: sticky; top: 0;
+    display: flex; flex-direction: column; justify-content: flex-end;
+    padding: var(--app-grid-padding); padding-bottom: 60px; box-sizing: border-box; z-index: 10;
   }
 
   .l-main__right {
-    width: 50%;
-    background-color: var(--system-background-color); 
-    padding-top: 15vh;
-    padding-bottom: 15vh;
+    width: 50%; background-color: var(--system-background-color); 
+    padding-top: 25vh; /* Ajuste para que la 1ra imagen empiece más centrada */
+    padding-bottom: 25vh;
     box-sizing: border-box;
   }
 
   .c-center-decoration {
-    position: absolute;
-    top: 50%;
-    right: 0;
+    position: absolute; top: 50%; right: 0;
     transform: translateY(-50%) translateX(50%);
-    text-align: center;
-    pointer-events: none;
-    z-index: 20;
-    mix-blend-mode: difference;
+    pointer-events: none; z-index: 20; mix-blend-mode: difference;
+    display: flex; align-items: center; gap: 0;
   }
 
-  .c-center-label {
-    display: block;
-    font-size: 12px;
-    margin-bottom: 20px;
-    opacity: 0.6;
-    transform: translateX(-150%); 
-    text-align: right;
-  }
-
-  .c-center-numbers {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-    font-size: 4rem;
-    line-height: 1;
-    font-weight: 300;
-  }
-
-  .c-center-numbers .is-active {
-    color: #fff;
-  }
+  .c-center-label { font-size: 12px; opacity: 0.6; margin-right: 20px; text-align: right; }
 
   .c-info-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 20px;
-    width: 100%;
-    font-size: 11px;
-    line-height: 1.6;
-    letter-spacing: 0.02em;
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;
+    width: 100%; font-size: 11px; line-height: 1.6; letter-spacing: 0.02em;
   }
+  .c-info-col { display: flex; flex-direction: column; }
+  .u-label { opacity: 0.4; margin-bottom: 10px; display: block; }
 
-  .c-info-col {
-    display: flex;
-    flex-direction: column;
-  }
+  .c-gallery { display: flex; flex-direction: column; align-items: center; gap: 120px; padding-inline: 60px; }
+  
+  .c-gallery__item { display: block; width: 100%; max-width: 650px; text-decoration: none; position: relative; }
+  
+  .c-gallery__image-wrapper { width: 100%; aspect-ratio: 4/5; overflow: hidden; background-color: #111; }
+  
+  .c-gallery__image-wrapper img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.7s cubic-bezier(0.2, 1, 0.3, 1); }
+  
+  .c-gallery__item:hover .c-gallery__image-wrapper img { transform: scale(1.04); }
+  
+  .c-gallery__number-mobile { display: none; }
 
-  .u-label {
-    opacity: 0.4;
-    margin-bottom: 10px;
-    display: block;
-  }
-
-  .c-gallery {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 120px;
-    padding-inline: 60px;
-  }
-
-  .c-gallery__item {
-    display: block;
-    width: 100%;
-    max-width: 650px;
-    text-decoration: none;
-    position: relative;
-  }
-
-  .c-gallery__image-wrapper {
-    width: 100%;
-    aspect-ratio: 4/5;
-    overflow: hidden;
-    background-color: #111;
-  }
-
-  .c-gallery__image-wrapper img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-    transition: transform 0.7s cubic-bezier(0.2, 1, 0.3, 1);
-  }
-  .c-gallery__item:hover .c-gallery__image-wrapper img {
-    transform: scale(1.04);
-  }
-
-  .c-gallery__number-mobile {
-    display: none;
-  }
-
-  /* --- RESPONSIVE (MÓVIL) --- */
   @media (max-width: 900px) {
-    .l-main {
-      flex-direction: column;
-    }
-
-    .l-main__left {
-      display: none;
-    }
-
-    .l-main__right {
-      width: 100%;
-      padding-top: 100px;
-      padding-inline: 20px;
-    }
-
-    .c-gallery {
-      padding-inline: 0;
-      gap: 60px;
-    }
-
+    .l-main { flex-direction: column; }
+    .l-main__left { display: none; }
+    .l-main__right { width: 100%; padding-top: 100px; padding-inline: 20px; }
+    .c-gallery { padding-inline: 0; gap: 60px; }
     .c-gallery__number-mobile {
-      display: block;
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      background: rgba(0,0,0,0.6);
-      color: white;
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 12px;
+      display: block; position: absolute; top: 10px; left: 10px;
+      background: rgba(0,0,0,0.6); color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;
     }
   }
 </style>
