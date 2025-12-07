@@ -7,7 +7,7 @@ const images = Array.from({ length: 27 }, (_, i) => i + 1);
 const formatNum = (num: number) => num.toString().padStart(2, '0');
 ---
 
-<BaseLayout title="Curaffy - Generative AI Work">
+<BaseLayout title="SPOT-AI - Generative AI Work">
   
   <Header />
 
@@ -18,7 +18,6 @@ const formatNum = (num: number) => num.toString().padStart(2, '0');
       <div class="c-center-decoration">
         <span class="c-center-label">(Selected)</span>
         
-        <!-- RUEDA -->
         <div class="c-wheel">
           <div class="c-wheel__line"></div>
           
@@ -49,7 +48,7 @@ const formatNum = (num: number) => num.toString().padStart(2, '0');
         <div class="c-info-col">
           <span class="u-label">(Info)</span>
           <p>27 Items</p>
-          <p>2024</p>
+          <p>2025</p>
         </div>
         <div class="c-info-col">
           <span class="u-label">(Action)</span>
@@ -59,7 +58,7 @@ const formatNum = (num: number) => num.toString().padStart(2, '0');
       
     </div>
 
-    <!-- GALERÍA -->
+    
     <div class="l-main__right">
       <div class="c-gallery">
         {images.map((num) => (
@@ -81,86 +80,59 @@ const formatNum = (num: number) => num.toString().padStart(2, '0');
 </BaseLayout>
 
 <script>
-  // Lógica de Sincronización Scroll-Rueda
-  const wheelStrip = document.querySelector('.js-wheel-strip') as HTMLElement;
+    const wheelStrip = document.querySelector('.js-wheel-strip') as HTMLElement;
   const wheelItems = document.querySelectorAll('.c-wheel__item');
   const galleryItems = document.querySelectorAll('.js-gallery-item');
   
   let pixelsPerIndex = 0;
   let wheelItemHeight = 0;
 
-  // Función para recalcular métricas (al inicio y al cambiar tamaño de ventana)
-  function updateMetrics() {
+    function updateMetrics() {
     if (galleryItems.length > 1 && wheelItems.length > 0) {
-      // 1. Calculamos la distancia visual entre la imagen 1 y la imagen 2
-      // Esto nos dice cuántos píxeles de scroll equivalen a "1 unidad" de avance en la rueda.
-      const firstRect = galleryItems[0].getBoundingClientRect();
+                  const firstRect = galleryItems[0].getBoundingClientRect();
       const secondRect = galleryItems[1].getBoundingClientRect();
-      // La distancia incluye la altura de la imagen + el gap
-      pixelsPerIndex = secondRect.top - firstRect.top;
+            pixelsPerIndex = secondRect.top - firstRect.top;
 
-      // 2. Altura de cada número en la rueda (4rem según CSS, aprox 64px)
-      wheelItemHeight = (wheelItems[0] as HTMLElement).offsetHeight;
+            wheelItemHeight = (wheelItems[0] as HTMLElement).offsetHeight;
     }
   }
 
-  // Bucle de animación (se ejecuta en cada frame para suavidad máxima)
-  function rafLoop() {
+    function rafLoop() {
     if (!pixelsPerIndex || !wheelStrip) return;
 
     const viewportCenter = window.innerHeight / 2;
     const firstItem = galleryItems[0];
     const firstRect = firstItem.getBoundingClientRect();
     
-    // Calculamos el centro de la primera imagen
-    const firstItemCenter = firstRect.top + (firstRect.height / 2);
+        const firstItemCenter = firstRect.top + (firstRect.height / 2);
 
-    // Distancia desde el centro de la primera imagen al centro de la pantalla
-    // Si es 0, estamos viendo la imagen 1. Si es negativo, hemos scrolleado hacia abajo.
-    const distFromCenter = firstItemCenter - viewportCenter;
+            const distFromCenter = firstItemCenter - viewportCenter;
 
-    // Convertimos esa distancia en un "índice flotante"
-    // El -1 es porque al scrollear hacia abajo (dist negativo), queremos que el índice aumente
-    let rawIndex = (distFromCenter * -1) / pixelsPerIndex;
+            let rawIndex = (distFromCenter * -1) / pixelsPerIndex;
 
-    // Límites: no bajar de 0 ni subir del máximo
-    const maxIndex = galleryItems.length - 1;
+        const maxIndex = galleryItems.length - 1;
     rawIndex = Math.max(0, Math.min(rawIndex, maxIndex));
 
-    // MOVER LA RUEDA
-    // Multiplicamos el índice exacto (ej: 1.54) por la altura de los números
-    const translateY = rawIndex * wheelItemHeight * -1;
+            const translateY = rawIndex * wheelItemHeight * -1;
     wheelStrip.style.transform = `translate3d(0, ${translateY}px, 0)`;
 
-    // EFECTOS VISUALES EN LOS NÚMEROS (Opacidad / Color)
-    wheelItems.forEach((item, i) => {
-      // Distancia entre este número y el índice actual flotante
-      const distance = Math.abs(i - rawIndex);
+        wheelItems.forEach((item, i) => {
+            const distance = Math.abs(i - rawIndex);
       
-      // Lógica de estilo:
-      // Si distance < 0.5, es el número "activo" (casi centrado)
-      // Si distance está entre 0.5 y 1.5, es el "siguiente" o "anterior"
-      
+                        
       const el = item as HTMLElement;
       
-      // Limpiamos estilos manuales previos para usar clases base si quieres,
-      // pero aquí aplicaremos opacidad dinámica para mayor suavidad.
-      
+                  
       if (distance < 0.5) {
-        // ACTIVO (Blanco puro)
-        el.style.opacity = '1';
+                el.style.opacity = '1';
         el.style.transform = 'scale(1)';
         el.style.color = '#fff';
       } else if (distance < 1.5) {
-        // EL SIGUIENTE (Grisaceo, semitransparente)
-        // Calculamos opacidad inversa a la distancia
-        const opacity = 1 - (distance - 0.5); 
+                        const opacity = 1 - (distance - 0.5); 
         el.style.opacity = Math.max(0.2, opacity).toString();
-        el.style.transform = 'scale(0.95)'; // Un poco más pequeño
-        el.style.color = 'rgba(255,255,255,0.5)';
+        el.style.transform = 'scale(0.95)';         el.style.color = 'rgba(255,255,255,0.5)';
       } else {
-        // INACTIVOS (Ocultos o muy tenues)
-        el.style.opacity = '0.05';
+                el.style.opacity = '0.05';
         el.style.transform = 'scale(0.9)';
         el.style.color = 'rgba(255,255,255,0.2)';
       }
@@ -169,8 +141,7 @@ const formatNum = (num: number) => num.toString().padStart(2, '0');
     requestAnimationFrame(rafLoop);
   }
 
-  // Inicialización
-  window.addEventListener('load', () => {
+    window.addEventListener('load', () => {
     updateMetrics();
     requestAnimationFrame(rafLoop);
   });
@@ -179,15 +150,15 @@ const formatNum = (num: number) => num.toString().padStart(2, '0');
 </script>
 
 <style>
-  /* --- ESTILOS RUEDA --- */
+  
   .c-wheel {
     position: relative;
     display: flex;
     align-items: center;
-    /* Altura para mostrar aprox 2 números (el actual y el que entra) */
+    
     height: 5rem; 
     overflow: hidden;
-    /* Máscara de gradiente para que los números desaparezcan suavemente arriba y abajo */
+    
     mask-image: linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%);
     -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%);
   }
@@ -202,32 +173,32 @@ const formatNum = (num: number) => num.toString().padStart(2, '0');
   .c-wheel__window {
     height: 100%;
     position: relative;
-    /* Importante: para que los números giren sobre su eje central visualmente */
+    
     margin-top: -0.2em; 
   }
 
   .c-wheel__strip {
     will-change: transform;
-    /* Eliminamos transiciones CSS aquí porque JS controla la posición frame a frame */
+    
     display: flex;
     flex-direction: column;
   }
 
   .c-wheel__item {
-    height: 4rem; /* Altura fija para cálculos JS */
-    font-size: 4rem;
-    line-height: 4rem; /* Centrado vertical */
+    height: 3.5rem; 
+    font-size: 2.5rem;
+    line-height: 4rem; 
     font-weight: 300;
     color: rgba(255, 255, 255, 0.2);
     font-variant-numeric: tabular-nums;
     transform-origin: left center;
     white-space: nowrap;
     
-    /* Transición suave solo para colores/opacidad, NO para movimiento */
+    
     transition: color 0.1s, opacity 0.1s, transform 0.1s; 
   }
 
-  /* --- RESTO DEL LAYOUT (Mismos estilos básicos) --- */
+  
   .l-main { display: flex; width: 100%; position: relative; }
 
   .l-main__left {
@@ -238,7 +209,7 @@ const formatNum = (num: number) => num.toString().padStart(2, '0');
 
   .l-main__right {
     width: 50%; background-color: var(--system-background-color); 
-    padding-top: 25vh; /* Ajuste para que la 1ra imagen empiece más centrada */
+    padding-top: 25vh; 
     padding-bottom: 25vh;
     box-sizing: border-box;
   }
