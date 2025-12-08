@@ -2,9 +2,11 @@
 // src/pages/index.astro
 import BaseLayout from "../layouts/BaseLayout.astro"
 import Header from "../components/Header.astro"
+import ScrollWheel from "../components/ScrollWheel.astro"
+import InfoGrid from "../components/InfoGrid.astro"
+import Gallery from "../components/Gallery.astro"
 
 const images = Array.from({ length: 27 }, (_, i) => i + 1);
-const formatNum = (num: number) => num.toString().padStart(2, '0');
 ---
 
 <BaseLayout title="SPOT-AI - Generative AI Work">
@@ -14,242 +16,36 @@ const formatNum = (num: number) => num.toString().padStart(2, '0');
   <main class="l-main">
     
     <div class="l-main__left">
-
-      <div class="c-center-decoration">
-        <span class="c-center-label">(Selected)</span>
-        
-        <div class="c-wheel">
-          <div class="c-wheel__line"></div>
-          
-          <div class="c-wheel__window">
-            <div class="c-wheel__strip js-wheel-strip">
-              {images.map((num) => (
-                <div class="c-wheel__item" data-wheel-index={num}>
-                  {formatNum(num)}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="c-info-grid">
-        <div class="c-info-col">
-          <span class="u-label">(Overview)</span>
-          <p>Generative AI Series</p>
-          <p>Curated Collection</p>
-          <p class="u-faded">Personal Work</p>
-        </div>
-        <div class="c-info-col">
-          <span class="u-label">(Tech)</span>
-          <p>Lummi</p>
-          <p>Midjourney</p>
-        </div>
-        <div class="c-info-col">
-          <span class="u-label">(Info)</span>
-          <p>27 Items</p>
-          <p>2025</p>
-        </div>
-        <div class="c-info-col">
-          <span class="u-label">(Action)</span>
-          <p>↪ Scroll to Explore</p>
-        </div>
-      </div>
-      
+      <ScrollWheel items={images} />
+      <InfoGrid />
     </div>
 
-    
     <div class="l-main__right">
-      <div class="c-gallery">
-        {images.map((num) => (
-          <a href={`/${formatNum(num)}/`} class="c-gallery__item js-gallery-item">
-            <div class="c-gallery__image-wrapper">
-              <img 
-                src={`/webp/image${formatNum(num)}.webp`} 
-                alt={`Art ${formatNum(num)}`}
-                loading="lazy" 
-              />
-            </div>
-            <span class="c-gallery__number-mobile">{formatNum(num)}</span>
-          </a>
-        ))}
-      </div>
+      <Gallery items={images} />
     </div>
 
   </main>
 </BaseLayout>
 
-<script>
-    const wheelStrip = document.querySelector('.js-wheel-strip') as HTMLElement;
-  const wheelItems = document.querySelectorAll('.c-wheel__item');
-  const galleryItems = document.querySelectorAll('.js-gallery-item');
-  
-  let pixelsPerIndex = 0;
-  let wheelItemHeight = 0;
-
-    function updateMetrics() {
-    if (galleryItems.length > 1 && wheelItems.length > 0) {
-                  const firstRect = galleryItems[0].getBoundingClientRect();
-      const secondRect = galleryItems[1].getBoundingClientRect();
-            pixelsPerIndex = secondRect.top - firstRect.top;
-
-            wheelItemHeight = (wheelItems[0] as HTMLElement).offsetHeight;
-    }
-  }
-
-    function rafLoop() {
-    if (!pixelsPerIndex || !wheelStrip) return;
-
-    const viewportCenter = window.innerHeight / 2;
-    const firstItem = galleryItems[0];
-    const firstRect = firstItem.getBoundingClientRect();
-    
-        const firstItemCenter = firstRect.top + (firstRect.height / 2);
-
-            const distFromCenter = firstItemCenter - viewportCenter;
-
-            let rawIndex = (distFromCenter * -1) / pixelsPerIndex;
-
-        const maxIndex = galleryItems.length - 1;
-    rawIndex = Math.max(0, Math.min(rawIndex, maxIndex));
-
-            const translateY = rawIndex * wheelItemHeight * -1;
-    wheelStrip.style.transform = `translate3d(0, ${translateY}px, 0)`;
-
-        wheelItems.forEach((item, i) => {
-            const distance = Math.abs(i - rawIndex);
-      
-                        
-      const el = item as HTMLElement;
-      
-                  
-      if (distance < 0.5) {
-                el.style.opacity = '1';
-        el.style.transform = 'scale(1)';
-        el.style.color = '#fff';
-      } else if (distance < 1.5) {
-                        const opacity = 1 - (distance - 0.5); 
-        el.style.opacity = Math.max(0.2, opacity).toString();
-        el.style.transform = 'scale(0.95)';         el.style.color = 'rgba(255,255,255,0.5)';
-      } else {
-                el.style.opacity = '0.05';
-        el.style.transform = 'scale(0.9)';
-        el.style.color = 'rgba(255,255,255,0.2)';
-      }
-    });
-
-    requestAnimationFrame(rafLoop);
-  }
-
-    window.addEventListener('load', () => {
-    updateMetrics();
-    requestAnimationFrame(rafLoop);
-  });
-  
-  window.addEventListener('resize', updateMetrics);
-</script>
-
 <style>
-  
-  .c-wheel {
-    position: relative;
-    display: flex;
-    align-items: center;
-    
-    height: 5rem; 
-    overflow: hidden;
-    
-    mask-image: linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%);
-  }
-
-  .c-wheel__line {
-    width: 1px;
-    height: 100%;
-    background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.5) 20%, rgba(255,255,255,0.5) 80%, transparent);
-    margin-right: 20px;
-  }
-
-  .c-wheel__window {
-    height: 100%;
-    position: relative;
-    
-    margin-top: -0.2em; 
-  }
-
-  .c-wheel__strip {
-    will-change: transform;
-    
-    display: flex;
-    flex-direction: column;
-  }
-
-  .c-wheel__item {
-    height: 3.5rem; 
-    font-size: 2.5rem;
-    line-height: 4rem; 
-    font-weight: 300;
-    color: rgba(255, 255, 255, 0.2);
-    font-variant-numeric: tabular-nums;
-    transform-origin: left center;
-    white-space: nowrap;
-    
-    
-    transition: color 0.1s, opacity 0.1s, transform 0.1s; 
-  }
-
-  
   .l-main { display: flex; width: 100%; position: relative; }
 
   .l-main__left {
     width: 50%; height: 100vh; position: sticky; top: 0;
     display: flex; flex-direction: column; justify-content: flex-end;
-    padding: var(--app-grid-padding); padding-bottom: 60px; box-sizing: border-box; z-index: 10;
+    padding: var(--app-grid-padding); padding-bottom: 10px; box-sizing: border-box; z-index: 10;
   }
 
   .l-main__right {
     width: 50%; background-color: var(--system-background-color); 
-    padding-top: 25vh; 
-    padding-bottom: 25vh;
+    padding-top: 10vh; 
+    padding-bottom: 15vh;
     box-sizing: border-box;
   }
-
-  .c-center-decoration {
-    position: absolute; top: 50%; right: 0;
-    transform: translateY(-50%) translateX(50%);
-    pointer-events: none; z-index: 20; mix-blend-mode: difference;
-    display: flex; align-items: center; gap: 0;
-  }
-
-  .c-center-label { font-size: 12px; opacity: 0.6; margin-right: 20px; text-align: right; }
-
-  .c-info-grid {
-    display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;
-    width: 100%; font-size: 11px; line-height: 1.6; letter-spacing: 0.02em;
-  }
-  .c-info-col { display: flex; flex-direction: column; }
-  .u-label { opacity: 0.4; margin-bottom: 10px; display: block; }
-
-  .c-gallery { display: flex; flex-direction: column; align-items: center; gap: 120px; padding-inline: 60px; }
-  
-  .c-gallery__item { display: block; width: 100%; max-width: 650px; text-decoration: none; position: relative; }
-  
-  .c-gallery__image-wrapper { width: 100%; aspect-ratio: 4/5; overflow: hidden; background-color: #111; }
-  
-  .c-gallery__image-wrapper img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.7s cubic-bezier(0.2, 1, 0.3, 1); }
-  
-  .c-gallery__item:hover .c-gallery__image-wrapper img { transform: scale(1.04); }
-  
-  .c-gallery__number-mobile { display: none; }
 
   @media (max-width: 900px) {
     .l-main { flex-direction: column; }
     .l-main__left { display: none; }
     .l-main__right { width: 100%; padding-top: 100px; padding-inline: 20px; }
-    .c-gallery { padding-inline: 0; gap: 60px; }
-    .c-gallery__number-mobile {
-      display: block; position: absolute; top: 10px; left: 10px;
-      background: rgba(0,0,0,0.6); color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;
-    }
   }
 </style>

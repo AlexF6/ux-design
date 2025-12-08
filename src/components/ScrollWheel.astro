@@ -1,0 +1,135 @@
+---
+// src/components/ScrollWheel.astro
+interface Props {
+  items: number[];
+}
+
+const { items } = Astro.props;
+const formatNum = (num: number) => num.toString().padStart(2, '0');
+---
+<span class="c-center-label">(Selected)</span>
+<span class="c-center-label-2">(Image)</span>
+
+<div class="c-center-decoration">
+  
+  <div class="c-wheel">
+    <div class="c-wheel__line"></div>
+    
+    <div class="c-wheel__window">
+      <div class="c-wheel__strip js-wheel-strip">
+        {items.map((num) => (
+          <div class="c-wheel__item" data-wheel-index={num}>
+            {formatNum(num)}
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const wheelStrip = document.querySelector('.js-wheel-strip') as HTMLElement;
+  const wheelItems = document.querySelectorAll('.c-wheel__item');
+  const galleryItems = document.querySelectorAll('.js-gallery-item');
+  
+  let pixelsPerIndex = 0;
+  let wheelItemHeight = 0;
+
+  function updateMetrics() {
+    if (galleryItems.length > 1 && wheelItems.length > 0) {
+      const firstRect = galleryItems[0].getBoundingClientRect();
+      const secondRect = galleryItems[1].getBoundingClientRect();
+      pixelsPerIndex = secondRect.top - firstRect.top;
+      wheelItemHeight = (wheelItems[0] as HTMLElement).offsetHeight;
+    }
+  }
+
+  function rafLoop() {
+    if (!pixelsPerIndex || !wheelStrip) return;
+
+    const viewportCenter = window.innerHeight / 2;
+    const firstItem = galleryItems[0];
+    const firstRect = firstItem.getBoundingClientRect();
+    
+    const firstItemCenter = firstRect.top + (firstRect.height / 2);
+    const distFromCenter = firstItemCenter - viewportCenter;
+
+    let rawIndex = (distFromCenter * -1) / pixelsPerIndex;
+    const maxIndex = galleryItems.length - 1;
+    rawIndex = Math.max(0, Math.min(rawIndex, maxIndex));
+
+    const translateY = rawIndex * wheelItemHeight * -1;
+    wheelStrip.style.transform = `translate3d(0, ${translateY}px, 0)`;
+
+    wheelItems.forEach((item, i) => {
+      const distance = Math.abs(i - rawIndex);
+      const el = item as HTMLElement;
+      
+      if (distance < 0.5) {
+        el.style.opacity = '1';
+        el.style.transform = 'scale(1)';
+        el.style.color = '#fff';
+      } else if (distance < 1.5) {
+        const opacity = 1 - (distance - 0.5); 
+        el.style.opacity = Math.max(0.2, opacity).toString();
+        el.style.transform = 'scale(0.95)';
+        el.style.color = 'rgba(255,255,255,0.5)';
+      } else {
+        el.style.opacity = '0.05';
+        el.style.transform = 'scale(0.9)';
+        el.style.color = 'rgba(255,255,255,0.2)';
+      }
+    });
+
+    requestAnimationFrame(rafLoop);
+  }
+
+  window.addEventListener('load', () => {
+    updateMetrics();
+    requestAnimationFrame(rafLoop);
+  });
+  
+  window.addEventListener('resize', updateMetrics);
+</script>
+
+<style>
+  .c-center-decoration {
+    position: absolute; top: 50%; left: 50%;
+    transform: translateY(-50%) translateX(20%);
+    pointer-events: none; z-index: 20; mix-blend-mode: difference;
+    display: flex; align-items: center; gap: 0;
+  }
+
+  .c-center-label { position: absolute; top: 50%; font-size: 12px; opacity: 0.6; text-align: right; }
+  .c-center-label-2 { position: absolute; padding-right: var(--app-grid-padding); top: 50%; right: -100%; font-size: 12px; opacity: 0.6; text-align: right; }
+
+  .c-wheel {
+    position: relative;
+    display: flex;
+    align-items: center;
+    height: 7rem;
+    opacity: 0.9;
+    overflow: hidden;
+    mask-image: linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%);
+  }
+
+  .c-wheel__line {
+    width: 1px;
+    height: 100%;
+    opacity: 0.6;
+    background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.5) 20%, rgba(255,255,255,0.5) 80%, transparent);
+    margin-right: 20px;
+  }
+
+  .c-wheel__window { height: 100%; position: relative; margin-top: -0.2em; }
+  .c-wheel__strip { will-change: transform; display: flex; flex-direction: column; }
+
+  .c-wheel__item {
+    height: 3.5rem; font-size: 2.5rem; line-height: 4rem; 
+    font-weight: 300; color: rgba(255, 255, 255, 0.2);
+    font-variant-numeric: tabular-nums; transform-origin: left center;
+    white-space: nowrap;
+    transition: color 0.1s, opacity 0.1s, transform 0.1s; 
+  }
+</style>

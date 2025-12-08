@@ -1,0 +1,52 @@
+---
+// src/components/Gallery.astro
+interface Props {
+  items: number[];
+}
+
+const { items } = Astro.props;
+const formatNum = (num: number) => num.toString().padStart(2, '0');
+---
+
+<div class="c-gallery">
+  {items.map((num) => (
+    <a href={`/${formatNum(num)}/`} class="c-gallery__item js-gallery-item">
+      <div class="c-gallery__image-wrapper">
+        <img 
+          src={`/webp/image${formatNum(num)}.webp`} 
+          alt={`Art ${formatNum(num)}`}
+          loading="lazy" 
+        />
+      </div>
+      <span class="c-gallery__number-mobile">{formatNum(num)}</span>
+    </a>
+  ))}
+</div>
+
+<style>
+
+  .c-gallery { display: flex; flex-direction: column; align-items: stretch; gap: 15px;
+     padding-right: 100px;
+     }
+  
+  .c-gallery__item { display: block; width: 100%; max-width: 750px; text-decoration: none; position: relative; }
+  
+  .c-gallery__image-wrapper { width: 100%; max-height: 800px; aspect-ratio: 4/5; overflow: hidden; background-color: #111; }
+  
+  .c-gallery__image-wrapper img { 
+    width: 100%; height: 100%; object-fit: cover; display: block; 
+    transition: transform 0.7s cubic-bezier(0.2, 1, 0.3, 1); 
+  }
+  
+  .c-gallery__item:hover .c-gallery__image-wrapper img { transform: scale(1.04); }
+  
+  .c-gallery__number-mobile { display: none; }
+
+  @media (max-width: 900px) {
+    .c-gallery { padding-inline: 0; gap: 60px; }
+    .c-gallery__number-mobile {
+      display: block; position: absolute; top: 10px; left: 10px;
+      background: rgba(0,0,0,0.6); color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;
+    }
+  }
+</style>
