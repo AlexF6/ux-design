@@ -1,5 +1,4 @@
 ---
-// src/components/Gallery.astro
 interface Props {
   items: number[];
 }
@@ -11,11 +10,13 @@ const formatNum = (num: number) => num.toString().padStart(2, '0');
 <div class="c-gallery">
   {items.map((num) => (
     <a href={`/${formatNum(num)}/`} class="c-gallery__item js-gallery-item">
-      <div class="c-gallery__image-wrapper">
+      <div class="c-gallery__image-wrapper js-wave-wrapper">
         <img 
           src={`/webp/image${formatNum(num)}.webp`} 
           alt={`Art ${formatNum(num)}`}
-          loading="lazy" 
+          loading="lazy"
+          width="600"
+          height="750"
         />
       </div>
       <span class="c-gallery__number-mobile">{formatNum(num)}</span>
@@ -24,29 +25,313 @@ const formatNum = (num: number) => num.toString().padStart(2, '0');
 </div>
 
 <style>
-
-  .c-gallery { display: flex; flex-direction: column; align-items: stretch; gap: 15px;
-     padding-right: 100px;
-     }
-  
-  .c-gallery__item { display: block; width: 100%; max-width: 750px; text-decoration: none; position: relative; }
-  
-  .c-gallery__image-wrapper { width: 100%; max-height: 800px; aspect-ratio: 4/5; overflow: hidden; background-color: #111; }
-  
-  .c-gallery__image-wrapper img { 
-    width: 100%; height: 100%; object-fit: cover; display: block; 
-    transition: transform 0.7s cubic-bezier(0.2, 1, 0.3, 1); 
+  .c-gallery { 
+    display: flex; 
+    flex-direction: column; 
+    align-items: stretch; 
+    gap: 15px;
+    padding-right: 100px;
   }
   
-  .c-gallery__item:hover .c-gallery__image-wrapper img { transform: scale(1.04); }
+  .c-gallery__item { 
+    display: block; 
+    width: 100%; 
+    max-width: 750px; 
+    text-decoration: none; 
+    position: relative; 
+  }
+  
+  .c-gallery__image-wrapper { 
+    width: 100%; 
+    max-height: 800px; 
+    aspect-ratio: 4/5; 
+    overflow: hidden; 
+    position: relative; 
+    border-radius: 4px; 
+    background-color: #111; 
+    transform: translateZ(0);
+  }
+  
+  .c-gallery__image-wrapper img { 
+    width: 100%; 
+    height: 100%; 
+    object-fit: cover; 
+    display: block; 
+    opacity: 1;
+    transition: opacity 0.5s ease;
+    will-change: opacity;
+  }
+
+  .c-gallery__image-wrapper.is-loaded img {
+    opacity: 0;
+  }
+  
+  .c-gallery__image-wrapper :global(canvas) {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.5s ease, transform 0.7s cubic-bezier(0.2, 1, 0.3, 1);
+    will-change: transform;
+  }
+  
+  .c-gallery__image-wrapper.is-loaded :global(canvas) {
+    opacity: 1;
+  }
+
+  .c-gallery__item:hover .c-gallery__image-wrapper :global(canvas) { 
+    transform: scale(1.04); 
+  }
   
   .c-gallery__number-mobile { display: none; }
 
   @media (max-width: 900px) {
     .c-gallery { padding-inline: 0; gap: 60px; }
     .c-gallery__number-mobile {
-      display: block; position: absolute; top: 10px; left: 10px;
-      background: rgba(0,0,0,0.6); color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;
+      display: block; 
+      position: absolute; 
+      top: 10px; 
+      left: 10px;
+      background: rgba(0,0,0,0.6); 
+      color: white; 
+      padding: 4px 8px; 
+      border-radius: 4px; 
+      font-size: 12px;
+      z-index: 10;
     }
   }
 </style>
+
+<script>
+  import * as THREE from 'three';
+
+  const CONFIG = {
+    speed: 0.08,
+    hoverIntensity: 0.8,
+    baseIntensity: 0.0
+  };
+
+  const vertexShader = `
+    uniform vec2 u_mouse;
+    uniform float u_intensity;
+    uniform vec2 u_res;
+    varying vec2 vUv;
+    
+    void main() {
+        vUv = uv;
+        vec3 pos = position;
+        
+        vec2 dir = pos.xy - u_mouse;
+        
+        vec2 aspect = vec2(u_res.x / u_res.y, 1.0);
+        float dist = length(dir * aspect);
+        
+        float radius = 0.3;
+        float influence = smoothstep(radius, 0.0, dist);
+        
+        vec2 offset = dir * influence * u_intensity;
+        pos.xy += offset;
+        
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+    }
+  `;
+
+  const fragmentShader = `
+    uniform sampler2D u_texture;
+    varying vec2 vUv;
+    void main() {
+        gl_FragColor = texture2D(u_texture, vUv);
+    }
+  `;
+
+  class WaveEffect {
+    container: HTMLElement;
+    image: HTMLImageElement;
+    scene!: THREE.Scene;
+    camera!: THREE.PerspectiveCamera;
+    renderer!: THREE.WebGLRenderer;
+    mesh!: THREE.Mesh;
+    material!: THREE.ShaderMaterial;
+    observer!: ResizeObserver;
+    animationId: number | null = null;
+    
+    state = { mouseX: 0, mouseY: 0, intensity: 0 };
+    target = { mouseX: 0, mouseY: 0, intensity: 0 };
+
+    constructor(container: HTMLElement) {
+      this.container = container;
+      this.image = container.querySelector('img') as HTMLImageElement;
+      if (this.image) {
+        this.init().catch(err => console.error(err));
+      }
+    }
+
+    async init() {
+      if (!this.image.complete) {
+        await new Promise((resolve) => { this.image.onload = resolve; });
+      }
+
+      const rect = this.container.getBoundingClientRect();
+      const width = rect.width || 600;
+      const height = rect.height || 750;
+
+      this.scene = new THREE.Scene();
+      
+      const fov = 80;
+      this.camera = new THREE.PerspectiveCamera(fov, width / height, 0.01, 10);
+      
+      // CALCULO EXACTO DE LA DISTANCIA Z:
+      // Para que un plano de altura 2.0 encaje exactamente en la vista vertical:
+      // dist = (height / 2) / tan(fov / 2)
+      const fovRad = (fov * Math.PI) / 180;
+      const dist = 1 / Math.tan(fovRad / 2);
+      this.camera.position.z = dist;
+
+      const texture = new THREE.TextureLoader().load(this.image.src);
+      texture.wrapS = THREE.ClampToEdgeWrapping;
+      texture.wrapT = THREE.ClampToEdgeWrapping;
+      texture.minFilter = THREE.LinearFilter;
+
+      this.material = new THREE.ShaderMaterial({
+        uniforms: {
+          u_mouse: { value: new THREE.Vector2(0, 0) },
+          u_intensity: { value: 0 },
+          u_texture: { value: texture },
+          u_res: { value: new THREE.Vector2(width, height) }
+        },
+        vertexShader,
+        fragmentShader,
+        transparent: true
+      });
+
+      this.mesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2, 32, 32), this.material);
+      this.scene.add(this.mesh);
+
+      this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+      this.renderer.setSize(width, height);
+      this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      
+      this.container.appendChild(this.renderer.domElement);
+      this.container.classList.add('is-loaded');
+
+      this.addListeners();
+      this.animate();
+    }
+
+    addListeners() {
+      this.container.addEventListener('mousemove', this.handleMouseMove);
+      this.container.addEventListener('mouseenter', this.handleMouseEnter);
+      this.container.addEventListener('mouseleave', this.handleMouseLeave);
+
+      this.observer = new ResizeObserver(this.handleResize);
+      this.observer.observe(this.container);
+    }
+
+    getMousePos(e: MouseEvent) {
+      const rect = this.container.getBoundingClientRect();
+      return {
+        x: ((e.clientX - rect.left) / rect.width) * 2 - 1,
+        y: -((e.clientY - rect.top) / rect.height) * 2 + 1
+      };
+    }
+
+    handleMouseMove = (e: MouseEvent) => {
+      const { x, y } = this.getMousePos(e);
+      this.target.mouseX = x;
+      this.target.mouseY = y;
+    }
+
+    handleMouseEnter = (e: MouseEvent) => {
+      const { x, y } = this.getMousePos(e);
+      this.target.mouseX = x;
+      this.target.mouseY = y;
+      this.state.mouseX = x;
+      this.state.mouseY = y;
+      this.target.intensity = CONFIG.hoverIntensity;
+    }
+
+    handleMouseLeave = () => {
+      this.target.intensity = CONFIG.baseIntensity;
+    }
+
+    handleResize = (entries: ResizeObserverEntry[]) => {
+      for (let entry of entries) {
+        const { width, height } = entry.contentRect;
+        if(width && height && this.renderer && this.camera) {
+            this.camera.aspect = width / height;
+            this.camera.updateProjectionMatrix();
+            this.renderer.setSize(width, height);
+            
+            if (this.material && this.material.uniforms.u_res) {
+              this.material.uniforms.u_res.value.set(width, height);
+            }
+        }
+      }
+    }
+
+    lerp(start: number, end: number, t: number) {
+      return start * (1 - t) + end * t;
+    }
+
+    animate = () => {
+      this.animationId = requestAnimationFrame(this.animate);
+
+      this.state.mouseX = this.lerp(this.state.mouseX, this.target.mouseX, CONFIG.speed);
+      this.state.mouseY = this.lerp(this.state.mouseY, this.target.mouseY, CONFIG.speed);
+      this.state.intensity = this.lerp(this.state.intensity, this.target.intensity, CONFIG.speed);
+
+      if (this.material && this.material.uniforms) {
+        this.material.uniforms.u_intensity.value = this.state.intensity;
+        this.material.uniforms.u_mouse.value.set(this.state.mouseX, this.state.mouseY);
+      }
+
+      if (this.renderer && this.scene && this.camera) {
+        this.renderer.render(this.scene, this.camera);
+      }
+    }
+
+    dispose() {
+      if (this.animationId) cancelAnimationFrame(this.animationId);
+      if (this.observer) this.observer.disconnect();
+      
+      this.container.removeEventListener('mousemove', this.handleMouseMove);
+      this.container.removeEventListener('mouseenter', this.handleMouseEnter);
+      this.container.removeEventListener('mouseleave', this.handleMouseLeave);
+      
+      if (this.renderer) {
+        this.renderer.dispose();
+        const canvas = this.container.querySelector('canvas');
+        if (canvas) canvas.remove();
+      }
+      
+      if (this.material) this.material.dispose();
+      this.container.classList.remove('is-loaded');
+    }
+  }
+
+  const instances: WaveEffect[] = [];
+
+  function cleanup() {
+    instances.forEach(instance => instance.dispose());
+    instances.length = 0;
+  }
+
+  function init() {
+    cleanup();
+    document.querySelectorAll('.js-wave-wrapper').forEach(el => {
+      if (!el.querySelector('canvas')) {
+        instances.push(new WaveEffect(el as HTMLElement));
+      }
+    });
+  }
+
+  document.addEventListener('astro:page-load', init);
+  document.addEventListener('astro:before-swap', cleanup);
+  
+  if (document.readyState === 'complete') init();
+  else document.addEventListener('DOMContentLoaded', init);
+</script>
