@@ -1,6 +1,8 @@
 ---
+// src/layouts/BaseLayout.astro
 import "../styles/globals.css";
 import Header from "../components/Header.astro";
+import { ClientRouter } from 'astro:transitions';
 
 interface Props {
   title: string;
@@ -15,47 +17,53 @@ const { title } = Astro.props;
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>{title}</title>
+
+    <ClientRouter />
   </head>
   <body>
     <Header />
-
     <slot />
-
     <script>
       import Lenis from 'lenis'
 
-      if (history.scrollRestoration) {
-        history.scrollRestoration = 'manual';
-      }
+      let lenis: Lenis;
 
-      const lenis = new Lenis({
-        duration: 1.2,
-        easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-        orientation: 'vertical',
-        gestureOrientation: 'vertical',
-        smoothWheel: true,
-      })
+      function initLenis() {
+        if (history.scrollRestoration) {
+          history.scrollRestoration = 'manual';
+        }
 
-      const hasVisited = window.sessionStorage.getItem('hasVisited');
-      if (!hasVisited) {
-        document.body.classList.add('is-first-visit');
-        window.sessionStorage.setItem('hasVisited', 'true');
-      }
+        lenis = new Lenis({
+          duration: 1.2,
+          easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+          orientation: 'vertical',
+          gestureOrientation: 'vertical',
+          smoothWheel: true,
+        });
 
-      window.scrollTo(0, 0);
+        const hasVisited = window.sessionStorage.getItem('hasVisited');
+        if (!hasVisited) {
+          document.body.classList.add('is-first-visit');
+          window.sessionStorage.setItem('hasVisited', 'true');
+        }
 
-      function raf(time: number) {
-        lenis.raf(time)
-        requestAnimationFrame(raf)
-      }
-
-      requestAnimationFrame(raf)
-
-      window.addEventListener('load', () => {
         document.body.classList.add('is-loaded');
-        lenis.resize();
+        
+        function raf(time: any) {
+          lenis.raf(time);
+          requestAnimationFrame(raf);
+        }
+
+        requestAnimationFrame(raf);
+      }
+
+      document.addEventListener('astro:page-load', () => {
+        initLenis();
+      });
+
+      document.addEventListener('astro:before-swap', () => {
+        if (lenis) lenis.destroy();
       });
     </script>
-
   </body>
 </html>

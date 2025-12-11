@@ -217,39 +217,60 @@ const date = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numer
 </style>
 
 <script>
+  import { navigate } from 'astro:transitions/client';
+
+  let cleanup: (() => void) | null = null;
+
   function initDetailPage() {
     const overlay = document.getElementById('detail-overlay');
 
-    if (overlay) {
-      requestAnimationFrame(() => {
-        overlay.classList.add('is-entering');
-      });
+    if (!overlay) return;
 
-      const backLink = document.querySelector('.c-back-link');
+    // Reset classes in case we're coming back from another image
+    overlay.classList.remove('is-leaving');
 
-      if (backLink) {
-        backLink.addEventListener('click', (event) => {
-          event.preventDefault();
-          
-          const targetHref = (backLink as HTMLAnchorElement).href || '/';
+    // Kick the enter animation on the next frame
+    requestAnimationFrame(() => {
+      overlay.classList.add('is-entering');
+    });
 
-          overlay.classList.remove('is-entering');
-          overlay.classList.add('is-leaving');
+    const backLink = overlay.querySelector('.c-back-link') as HTMLAnchorElement | null;
+    if (!backLink) return;
 
-          const handleAnimationEnd = () => {
-            overlay.removeEventListener('animationend', handleAnimationEnd);
-            window.location.href = targetHref;
-          };
+    const handleClick = (event: MouseEvent) => {
+      event.preventDefault();
 
-          overlay.addEventListener('animationend', handleAnimationEnd);
-        });
-      }
-    }
+      const targetHref = backLink.getAttribute('href') || '/';
+
+      overlay.classList.remove('is-entering');
+      overlay.classList.add('is-leaving');
+
+      const handleAnimationEnd = () => {
+        overlay.removeEventListener('animationend', handleAnimationEnd);
+        navigate(targetHref); // use ClientRouter SPA nav
+      };
+
+      overlay.addEventListener('animationend', handleAnimationEnd);
+    };
+
+    backLink.addEventListener('click', handleClick);
+
+    // expose cleanup so we don't accumulate listeners between navigations
+    cleanup = () => {
+      backLink.removeEventListener('click', handleClick);
+      cleanup = null;
+    };
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initDetailPage);
-  } else {
+  // Run on initial load *and* every SPA navigation
+  document.addEventListener('astro:page-load', () => {
     initDetailPage();
-  }
+  });
+
+  // Clean up before Astro swaps out this page
+  document.addEventListener('astro:before-swap', () => {
+    if (cleanup) {
+      cleanup();
+    }
+  });
 </script>

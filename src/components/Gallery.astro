@@ -122,7 +122,7 @@ const getImage = (num: number) => {
       position: absolute; 
       top: 10px; 
       left: 10px;
-      background: rgba(0,0,0,0.6); 
+      background: rgba(0,0,0,0.6);
       color: white; 
       padding: 4px 8px; 
       border-radius: 4px; 
@@ -174,6 +174,8 @@ const getImage = (num: number) => {
     }
   `;
 
+  const activeInstances = new Set<WaveEffect>();
+
   class WaveEffect {
     container: HTMLElement;
     image: HTMLImageElement;
@@ -192,7 +194,9 @@ const getImage = (num: number) => {
     constructor(container: HTMLElement) {
       this.container = container;
       this.image = container.querySelector('img') as HTMLImageElement;
+      
       if (this.image) {
+        activeInstances.add(this);
         this.init();
       }
     }
@@ -200,8 +204,12 @@ const getImage = (num: number) => {
     async init() {
       if (this.isDestroyed) return;
 
-      if (!this.image.complete) {
-        await new Promise((resolve) => { this.image.onload = resolve; });
+      try {
+        await this.image.decode();
+      } catch (e) {
+        if (!this.image.complete) {
+           await new Promise((resolve) => { this.image.onload = resolve; });
+        }
       }
 
       if (this.isDestroyed) return;
@@ -239,7 +247,7 @@ const getImage = (num: number) => {
       this.mesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2, 32, 32), this.material);
       this.scene.add(this.mesh);
 
-      this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+      this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "high-performance" });
       this.renderer.setSize(width, height);
       this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       
@@ -290,6 +298,8 @@ const getImage = (num: number) => {
     }
 
     handleResize = (entries: ResizeObserverEntry[]) => {
+      if (this.isDestroyed) return;
+      
       for (let entry of entries) {
         const { width, height } = entry.contentRect;
         if(width && height && this.renderer && this.camera) {
@@ -310,12 +320,20 @@ const getImage = (num: number) => {
 
     animate = () => {
       if (this.isDestroyed) return;
+
+      if (this.renderer && !this.renderer.domElement.isConnected) {
+        this.dispose();
+        return;
+      }
       
       this.animationId = requestAnimationFrame(this.animate);
 
       this.state.mouseX = this.lerp(this.state.mouseX, this.target.mouseX, CONFIG.speed);
       this.state.mouseY = this.lerp(this.state.mouseY, this.target.mouseY, CONFIG.speed);
       this.state.intensity = this.lerp(this.state.intensity, this.target.intensity, CONFIG.speed);
+
+      if (Math.abs(this.state.intensity) < 0.001 && Math.abs(this.target.intensity) < 0.001) {
+      }
 
       if (this.material && this.material.uniforms) {
         this.material.uniforms.u_intensity.value = this.state.intensity;
@@ -328,20 +346,27 @@ const getImage = (num: number) => {
     }
 
     dispose() {
+      if (this.isDestroyed) return;
       this.isDestroyed = true;
+      activeInstances.delete(this);
+
       if (this.animationId) cancelAnimationFrame(this.animationId);
       if (this.observer) this.observer.disconnect();
       
-      this.container.removeEventListener('mousemove', this.handleMouseMove);
-      this.container.removeEventListener('mouseenter', this.handleMouseEnter);
-      this.container.removeEventListener('mouseleave', this.handleMouseLeave);
-      
-      this.container.classList.remove('is-loaded');
+      if (this.container) {
+        this.container.removeEventListener('mousemove', this.handleMouseMove);
+        this.container.removeEventListener('mouseenter', this.handleMouseEnter);
+        this.container.removeEventListener('mouseleave', this.handleMouseLeave);
+        this.container.classList.remove('is-loaded');
+      }
 
       if (this.renderer) {
+        this.renderer.forceContextLoss();
         this.renderer.dispose();
         const canvas = this.container.querySelector('canvas');
         if (canvas) canvas.remove();
+        // @ts-ignore
+        this.renderer = null;
       }
       
       if (this.material) {
@@ -354,44 +379,38 @@ const getImage = (num: number) => {
       if (this.mesh) {
         this.mesh.geometry.dispose();
       }
+
+      if (this.scene) {
+        this.scene.clear();
+      }
     }
   }
-
-  const instanceMap = new WeakMap();
+  
+  const elementInstanceMap = new WeakMap<HTMLElement, WaveEffect>();
   let intersectionObserver: IntersectionObserver;
 
   function cleanup() {
     if (intersectionObserver) {
       intersectionObserver.disconnect();
     }
-    document.querySelectorAll('.js-wave-wrapper').forEach(el => {
-      const instance = instanceMap.get(el);
-      if (instance) {
-        instance.dispose();
-        instanceMap.delete(el);
-      }
-    });
+    
+    activeInstances.forEach(instance => instance.dispose());
+    activeInstances.clear();
   }
 
   function init() {
     cleanup();
-    
+
     intersectionObserver = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         const el = entry.target as HTMLElement;
         
         if (entry.isIntersecting) {
-          if (!instanceMap.has(el)) {
+          if (!elementInstanceMap.has(el)) {
             const instance = new WaveEffect(el);
-            instanceMap.set(el, instance);
+            elementInstanceMap.set(el, instance);
           }
-        } else {
-          const instance = instanceMap.get(el);
-          if (instance) {
-            instance.dispose();
-            instanceMap.delete(el);
-          }
-        }
+        } 
       });
     }, {
       rootMargin: '200px 0px'
@@ -404,7 +423,5 @@ const getImage = (num: number) => {
 
   document.addEventListener('astro:page-load', init);
   document.addEventListener('astro:before-swap', cleanup);
-  
-  if (document.readyState === 'complete') init();
-  else document.addEventListener('DOMContentLoaded', init);
+
 </script>

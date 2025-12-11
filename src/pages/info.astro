@@ -14,14 +14,10 @@ const row2 = allImages.slice(6, 12);
 ---
 
 <BaseLayout title="Info - SPOT AI">
-  
   <main class="l-info">
-
     <section id="info-overlay" class="c-info-overlay">
-
       <div class="c-collage-container">
         <div class="c-collage-tilt">
-
           <div class="c-collage-row u-move-left">
             {row1.map((img) => (
               <div class="c-collage-item">
@@ -47,15 +43,12 @@ const row2 = allImages.slice(6, 12);
               </div>
             ))}
           </div>
-
         </div>
-        
         <div class="c-overlay"></div>
       </div>
 
       <div class="c-content">
         <div class="c-label">- Info</div>
-        
         <h1 class="c-headline">
           <span class="u-block u-white">MY FAVORITES</span>
           <span class="u-block u-grey">AI IMAGES</span>
@@ -64,12 +57,12 @@ const row2 = allImages.slice(6, 12);
         </h1>
 
         <div class="c-footer">
-          <a href="/" class="c-back-link" data-astro-prefetch>Back to Home</a>
+          <a href="/" class="c-back-link" data-astro-prefetch>
+            Back to Home
+          </a>
         </div>
       </div>
-
     </section>
-
   </main>
 </BaseLayout>
 
@@ -83,25 +76,35 @@ const row2 = allImages.slice(6, 12);
   }
 
   .c-info-overlay {
-    position: fixed; inset: 0;
-    width: 100%; height: 100%;
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
     background-color: #050505;
     z-index: 50;
-    transform: translateY(100%);
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
+    transform: translateY(100%);
   }
 
   @keyframes slide-in-up {
-    from { transform: translateY(100%); }
-    to   { transform: translateY(0); }
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
   }
 
   @keyframes slide-out-up {
-    from { transform: translateY(0); }
-    to   { transform: translateY(-100%); }
+    from {
+      transform: translateY(0);
+    }
+    to {
+      transform: translateY(-100%);
+    }
   }
 
   .c-info-overlay.is-entering {
@@ -143,7 +146,7 @@ const row2 = allImages.slice(6, 12);
 
   .c-collage-item {
     width: 400px;
-    aspect-ratio: 4/3;
+    aspect-ratio: 4 / 3;
     border-radius: 8px;
     overflow: hidden;
     position: relative;
@@ -159,31 +162,48 @@ const row2 = allImages.slice(6, 12);
   }
 
   @keyframes scrollLeft {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(-50%); }
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-50%);
+    }
   }
 
   @keyframes scrollRight {
-    0% { transform: translateX(-50%); }
-    100% { transform: translateX(0); }
+    0% {
+      transform: translateX(-50%);
+    }
+    100% {
+      transform: translateX(0);
+    }
   }
 
-  .u-img-cover { width: 100%; height: 100%; object-fit: cover; }
+  .u-img-cover {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
 
   .c-overlay {
-    position: absolute; inset: 0;
-    background: radial-gradient(circle, rgba(5,5,5,0.4) 0%, rgba(5,5,5,1) 85%);
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle, rgba(5, 5, 5, 0.4) 0%, rgba(5, 5, 5, 1) 85%);
     z-index: 1;
   }
 
   .c-content {
-    position: relative; z-index: 10;
+    position: relative;
+    z-index: 10;
     padding: var(--app-grid-padding);
     text-align: center;
   }
 
   .c-label {
-    font-size: 14px; margin-bottom: 20px; color: white; opacity: 0.8;
+    font-size: 14px;
+    margin-bottom: 20px;
+    color: white;
+    opacity: 0.8;
   }
 
   .c-headline {
@@ -196,59 +216,89 @@ const row2 = allImages.slice(6, 12);
     margin: 0 0 40px 0;
   }
 
-  .u-block { display: block; }
-  .u-white { color: #fff; }
-  .u-grey { color: rgba(255,255,255, 0.25); }
+  .u-block {
+    display: block;
+  }
+  .u-white {
+    color: #fff;
+  }
+  .u-grey {
+    color: rgba(255, 255, 255, 0.25);
+  }
 
   .c-back-link {
-    color: white; text-decoration: none;
-    font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em;
-    border-bottom: 1px solid rgba(255,255,255,0.3);
-    padding-bottom: 4px; transition: 0.3s;
+    color: white;
+    text-decoration: none;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+    padding-bottom: 4px;
+    transition: 0.3s;
   }
-  .c-back-link:hover { opacity: 0.7; border-color: white; }
+  .c-back-link:hover {
+    opacity: 0.7;
+    border-color: white;
+  }
 
   @media (max-width: 900px) {
-    .c-collage-item { width: 250px; }
-    .c-headline { text-align: center; }
+    .c-collage-item {
+      width: 250px;
+    }
+    .c-headline {
+      text-align: center;
+    }
   }
 </style>
 
 <script>
-  function initInfoPage() {
+  import { navigate } from 'astro:transitions/client';
+
+  let cleanup: (() => void) | null = null;
+
+  function initInfoOverlay() {
     const overlay = document.getElementById('info-overlay');
 
-    if (overlay) {
-      requestAnimationFrame(() => {
-        overlay.classList.add('is-entering');
-      });
+    if (!overlay) return;
 
-      const backLink = document.querySelector('.c-back-link');
+    overlay.classList.remove('is-leaving');
 
-      if (backLink) {
-        backLink.addEventListener('click', (event) => {
-          event.preventDefault();
+    requestAnimationFrame(() => {
+      overlay.classList.add('is-entering');
+    });
 
-          const targetHref = (backLink as HTMLAnchorElement).href || '/';
+    const backLink = overlay.querySelector('.c-back-link') as HTMLAnchorElement | null;
+    if (!backLink) return;
 
-          overlay.classList.remove('is-entering');
-          overlay.classList.add('is-leaving');
+    const handleClick = (event: MouseEvent) => {
+      event.preventDefault();
 
-          const handleAnimationEnd = () => {
-            overlay.removeEventListener('animationend', handleAnimationEnd);
-            
-            window.location.href = targetHref;
-          };
+      const targetHref = backLink.getAttribute('href') || '/';
 
-          overlay.addEventListener('animationend', handleAnimationEnd);
-        });
-      }
+      overlay.classList.remove('is-entering');
+      overlay.classList.add('is-leaving');
+
+      const handleAnimationEnd = () => {
+        overlay.removeEventListener('animationend', handleAnimationEnd);
+        navigate(targetHref);
+      };
+
+      overlay.addEventListener('animationend', handleAnimationEnd);
+    };
+
+    backLink.addEventListener('click', handleClick);
+
+    cleanup = () => {
+      backLink.removeEventListener('click', handleClick);
+      cleanup = null;
+    };
+  }
+
+  document.addEventListener('astro:page-load', initInfoOverlay);
+
+  document.addEventListener('astro:before-swap', () => {
+    if (cleanup) {
+      cleanup();
     }
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initInfoPage);
-  } else {
-    initInfoPage();
-  }
+  });
 </script>

@@ -2,7 +2,7 @@
 const year = new Date().getFullYear();
 ---
 
-<header class="l-header">
+<header class="l-header" transition:persist>
   <div class="l-header__inner">
 
     <div class="l-header__left">
@@ -11,17 +11,29 @@ const year = new Date().getFullYear();
     </div>
 
     <div class="l-header__center">
-      <a href="/" class="l-header__title">SPOT-AI</a>
+      <a
+        href="/"
+        class="l-header__title"
+        data-astro-prefetch
+      >
+        SPOT-AI
+      </a>
     </div>
 
     <div class="l-header__right">
-      <a href="/info/" class="l-header__link">
+      <a
+        href="/info/"
+        class="l-header__link"
+        data-astro-prefetch
+      >
         INFO
       </a>
     </div>
 
   </div>
 </header>
+
+
 
 
 <style>

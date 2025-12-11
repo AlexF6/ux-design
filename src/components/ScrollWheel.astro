@@ -26,94 +26,155 @@ const formatNum = (num: number) => num.toString().padStart(2, '0');
 </div>
 
 <script>
-  const wheelStrip = document.querySelector('.js-wheel-strip') as HTMLElement;
-  const wheelItems = document.querySelectorAll('.c-wheel__item');
-  const wheelContainer = document.querySelector('.c-wheel') as HTMLElement;
-  const galleryItems = document.querySelectorAll('.js-gallery-item');
-  
-  let pixelsPerIndex = 0;
-  let wheelItemHeight = 0;
-  let centerOffset = 0;
+  let wheelInstance: ScrollWheel | null = null;
 
-  function updateMetrics() {
-    if (galleryItems.length > 1 && wheelItems.length > 0) {
-      const firstItem = galleryItems[0] as HTMLElement;
-      const secondItem = galleryItems[1] as HTMLElement;
-      pixelsPerIndex = secondItem.offsetTop - firstItem.offsetTop;
-      const itemStyle = window.getComputedStyle(wheelItems[0]);
-      wheelItemHeight = parseFloat(itemStyle.height);
-      const containerHeight = wheelContainer.offsetHeight;
-      centerOffset = (containerHeight / 2) - (wheelItemHeight / 2);
+  class ScrollWheel {
+    wheelStrip: HTMLElement | null;
+    wheelItems: HTMLElement[];
+    wheelContainer: HTMLElement | null;
+    galleryItems: HTMLElement[];
+
+    pixelsPerIndex = 0;
+    wheelItemHeight = 0;
+    centerOffset = 0;
+    rafId: number | null = null;
+
+    constructor() {
+      this.wheelStrip = document.querySelector('.js-wheel-strip') as HTMLElement | null;
+      this.wheelItems = Array.from(
+        document.querySelectorAll('.c-wheel__item')
+      ) as HTMLElement[];
+      this.wheelContainer = document.querySelector('.c-wheel') as HTMLElement | null;
+      this.galleryItems = Array.from(
+        document.querySelectorAll('.js-gallery-item')
+      ) as HTMLElement[];
+
+      if (
+        !this.wheelStrip ||
+        !this.wheelContainer ||
+        this.wheelItems.length === 0 ||
+        this.galleryItems.length === 0
+      ) {
+        // Nothing to do on this page
+        return;
+      }
+
+      this.updateMetrics = this.updateMetrics.bind(this);
+      this.rafLoop = this.rafLoop.bind(this);
+
+      this.updateMetrics();
+      this.rafId = requestAnimationFrame(this.rafLoop);
+      window.addEventListener('resize', this.updateMetrics);
+    }
+
+    updateMetrics() {
+      if (this.galleryItems.length > 1 && this.wheelItems.length > 0 && this.wheelContainer) {
+        const firstItem = this.galleryItems[0];
+        const secondItem = this.galleryItems[1];
+
+        this.pixelsPerIndex = secondItem.offsetTop - firstItem.offsetTop;
+
+        const itemStyle = window.getComputedStyle(this.wheelItems[0]);
+        this.wheelItemHeight = parseFloat(itemStyle.height);
+
+        const containerHeight = this.wheelContainer.offsetHeight;
+        this.centerOffset = containerHeight / 2 - this.wheelItemHeight / 2;
+      }
+    }
+
+    rafLoop() {
+      if (
+        !this.pixelsPerIndex ||
+        !this.wheelStrip ||
+        this.galleryItems.length === 0
+      ) {
+        this.rafId = requestAnimationFrame(this.rafLoop);
+        return;
+      }
+
+      const viewportCenter = window.innerHeight / 2;
+
+      let closestIndex = 0;
+      let minDiff = Infinity;
+
+      this.galleryItems.forEach((item, i) => {
+        const rect = item.getBoundingClientRect();
+        const itemCenter = rect.top + rect.height / 2;
+        const diff = Math.abs(itemCenter - viewportCenter);
+
+        if (diff < minDiff) {
+          minDiff = diff;
+          closestIndex = i;
+        }
+      });
+
+      const closestItem = this.galleryItems[closestIndex];
+      const rect = closestItem.getBoundingClientRect();
+      const itemCenter = rect.top + rect.height / 2;
+      const distFromCenter = itemCenter - viewportCenter;
+
+      let rawIndex =
+        closestIndex - distFromCenter / this.pixelsPerIndex;
+      const maxIndex = this.galleryItems.length - 1;
+      rawIndex = Math.max(0, Math.min(rawIndex, maxIndex));
+
+      const translateY =
+        rawIndex * this.wheelItemHeight * -1 + this.centerOffset;
+      this.wheelStrip.style.transform = `translate3d(0, ${translateY}px, 0)`;
+
+      this.wheelItems.forEach((item, i) => {
+        const distance = Math.abs(i - rawIndex);
+        const el = item as HTMLElement;
+
+        if (distance < 0.5) {
+          el.style.opacity = '1';
+          el.style.transform = 'scale(1)';
+          el.style.color = '#fff';
+        } else if (distance < 1.5) {
+          const opacity = 1 - (distance - 0.5);
+          el.style.opacity = Math.max(0.2, opacity).toString();
+          el.style.transform = 'scale(0.95)';
+          el.style.color = 'rgba(255,255,255,0.5)';
+        } else {
+          el.style.opacity = '0.05';
+          el.style.transform = 'scale(0.9)';
+          el.style.color = 'rgba(255,255,255,0.2)';
+        }
+      });
+
+      this.rafId = requestAnimationFrame(this.rafLoop);
+    }
+
+    destroy() {
+      if (this.rafId !== null) {
+        cancelAnimationFrame(this.rafId);
+      }
+      window.removeEventListener('resize', this.updateMetrics);
     }
   }
 
-  function rafLoop() {
-    if (!pixelsPerIndex || !wheelStrip || galleryItems.length === 0) return;
+  function initWheel() {
+    if (wheelInstance) {
+      wheelInstance.destroy();
+      wheelInstance = null;
+    }
 
-    const viewportCenter = window.innerHeight / 2;
-    
-    
-    let closestIndex = 0;
-    let minDiff = Infinity;
+    // Only create if we’re actually on a page that has the wheel
+    const wheelRoot = document.querySelector('.c-wheel');
+    if (!wheelRoot) return;
 
-    galleryItems.forEach((item, i) => {
-      
-      
-      const rect = item.getBoundingClientRect();
-      const itemCenter = rect.top + (rect.height / 2);
-      const diff = Math.abs(itemCenter - viewportCenter);
-      
-      if (diff < minDiff) {
-        minDiff = diff;
-        closestIndex = i;
-      }
-    });
-
-    const closestItem = galleryItems[closestIndex];
-    const rect = closestItem.getBoundingClientRect();
-    const itemCenter = rect.top + (rect.height / 2);
-    const distFromCenter = itemCenter - viewportCenter;
-    
-    
-    let rawIndex = closestIndex - (distFromCenter / pixelsPerIndex);
-    const maxIndex = galleryItems.length - 1;
-    rawIndex = Math.max(0, Math.min(rawIndex, maxIndex));
-
-    
-    const translateY = (rawIndex * wheelItemHeight * -1) + centerOffset;
-    wheelStrip.style.transform = `translate3d(0, ${translateY}px, 0)`;
-
-    
-    wheelItems.forEach((item, i) => {
-      const distance = Math.abs(i - rawIndex);
-      const el = item as HTMLElement;
-      
-      if (distance < 0.5) {
-        el.style.opacity = '1';
-        el.style.transform = 'scale(1)';
-        el.style.color = '#fff';
-      } else if (distance < 1.5) {
-        const opacity = 1 - (distance - 0.5); 
-        el.style.opacity = Math.max(0.2, opacity).toString();
-        el.style.transform = 'scale(0.95)';
-        el.style.color = 'rgba(255,255,255,0.5)';
-      } else {
-        el.style.opacity = '0.05';
-        el.style.transform = 'scale(0.9)';
-        el.style.color = 'rgba(255,255,255,0.2)';
-      }
-    });
-
-    requestAnimationFrame(rafLoop);
+    wheelInstance = new ScrollWheel();
   }
 
-  window.addEventListener('load', () => {
-    updateMetrics();
-    requestAnimationFrame(rafLoop);
+  document.addEventListener('astro:page-load', initWheel);
+  document.addEventListener('astro:before-swap', () => {
+    if (wheelInstance) {
+      wheelInstance.destroy();
+      wheelInstance = null;
+    }
   });
-  
-  window.addEventListener('resize', updateMetrics);
 </script>
+
 
 
 <style>
