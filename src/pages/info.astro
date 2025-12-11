@@ -1,0 +1,254 @@
+---
+// src/pages/info.astro
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { Image } from "astro:assets";
+
+const imageFiles = import.meta.glob<{ default: ImageMetadata }>(
+  "/src/assets/webp/*.{jpeg,jpg,png,tiff,webp}",
+  { eager: true }
+);
+const allImages = Object.values(imageFiles).map((f) => f.default);
+
+const row1 = allImages.slice(0, 6);
+const row2 = allImages.slice(6, 12);
+---
+
+<BaseLayout title="Info - SPOT AI">
+  
+  <main class="l-info">
+
+    <section id="info-overlay" class="c-info-overlay">
+
+      <div class="c-collage-container">
+        <div class="c-collage-tilt">
+
+          <div class="c-collage-row u-move-left">
+            {row1.map((img) => (
+              <div class="c-collage-item">
+                <Image src={img} alt="" width={400} class="u-img-cover" />
+              </div>
+            ))}
+            {row1.map((img) => (
+              <div class="c-collage-item">
+                <Image src={img} alt="" width={400} class="u-img-cover" />
+              </div>
+            ))}
+          </div>
+
+          <div class="c-collage-row u-move-right">
+            {row2.map((img) => (
+              <div class="c-collage-item">
+                <Image src={img} alt="" width={400} class="u-img-cover" />
+              </div>
+            ))}
+            {row2.map((img) => (
+              <div class="c-collage-item">
+                <Image src={img} alt="" width={400} class="u-img-cover" />
+              </div>
+            ))}
+          </div>
+
+        </div>
+        
+        <div class="c-overlay"></div>
+      </div>
+
+      <div class="c-content">
+        <div class="c-label">- Info</div>
+        
+        <h1 class="c-headline">
+          <span class="u-block u-white">MY FAVORITES</span>
+          <span class="u-block u-grey">AI IMAGES</span>
+          <span class="u-block u-white">CAREFULLY</span>
+          <span class="u-block u-grey">SELECTED IMAGES</span>
+        </h1>
+
+        <div class="c-footer">
+          <a href="/" class="c-back-link" data-astro-prefetch>Back to Home</a>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+</BaseLayout>
+
+<style>
+  .l-info {
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+    position: relative;
+    background-color: #050505;
+  }
+
+  .c-info-overlay {
+    position: fixed; inset: 0;
+    width: 100%; height: 100%;
+    background-color: #050505;
+    z-index: 50;
+    transform: translateY(100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  @keyframes slide-in-up {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+  }
+
+  @keyframes slide-out-up {
+    from { transform: translateY(0); }
+    to   { transform: translateY(-100%); }
+  }
+
+  .c-info-overlay.is-entering {
+    animation: slide-in-up 1.2s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+  }
+
+  .c-info-overlay.is-leaving {
+    animation: slide-out-up 0.6s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+  }
+
+  .c-collage-container {
+    position: absolute;
+    inset: -20%;
+    width: 140%;
+    height: 140vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .c-collage-tilt {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    transform: rotate(-5deg);
+    width: 100%;
+    opacity: 0.35;
+    filter: grayscale(100%);
+  }
+
+  .c-collage-row {
+    display: flex;
+    flex-direction: row;
+    gap: 30px;
+    width: max-content;
+  }
+
+  .c-collage-item {
+    width: 400px;
+    aspect-ratio: 4/3;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .u-move-left {
+    animation: scrollLeft 60s linear infinite;
+  }
+
+  .u-move-right {
+    animation: scrollRight 65s linear infinite;
+  }
+
+  @keyframes scrollLeft {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  @keyframes scrollRight {
+    0% { transform: translateX(-50%); }
+    100% { transform: translateX(0); }
+  }
+
+  .u-img-cover { width: 100%; height: 100%; object-fit: cover; }
+
+  .c-overlay {
+    position: absolute; inset: 0;
+    background: radial-gradient(circle, rgba(5,5,5,0.4) 0%, rgba(5,5,5,1) 85%);
+    z-index: 1;
+  }
+
+  .c-content {
+    position: relative; z-index: 10;
+    padding: var(--app-grid-padding);
+    text-align: center;
+  }
+
+  .c-label {
+    font-size: 14px; margin-bottom: 20px; color: white; opacity: 0.8;
+  }
+
+  .c-headline {
+    font-family: 'Lato', sans-serif;
+    font-size: clamp(3rem, 7vw, 8rem);
+    line-height: 0.9;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: -0.02em;
+    margin: 0 0 40px 0;
+  }
+
+  .u-block { display: block; }
+  .u-white { color: #fff; }
+  .u-grey { color: rgba(255,255,255, 0.25); }
+
+  .c-back-link {
+    color: white; text-decoration: none;
+    font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em;
+    border-bottom: 1px solid rgba(255,255,255,0.3);
+    padding-bottom: 4px; transition: 0.3s;
+  }
+  .c-back-link:hover { opacity: 0.7; border-color: white; }
+
+  @media (max-width: 900px) {
+    .c-collage-item { width: 250px; }
+    .c-headline { text-align: center; }
+  }
+</style>
+
+<script>
+  function initInfoPage() {
+    const overlay = document.getElementById('info-overlay');
+
+    if (overlay) {
+      requestAnimationFrame(() => {
+        overlay.classList.add('is-entering');
+      });
+
+      const backLink = document.querySelector('.c-back-link');
+
+      if (backLink) {
+        backLink.addEventListener('click', (event) => {
+          event.preventDefault();
+
+          const targetHref = (backLink as HTMLAnchorElement).href || '/';
+
+          overlay.classList.remove('is-entering');
+          overlay.classList.add('is-leaving');
+
+          const handleAnimationEnd = () => {
+            overlay.removeEventListener('animationend', handleAnimationEnd);
+            
+            window.location.href = targetHref;
+          };
+
+          overlay.addEventListener('animationend', handleAnimationEnd);
+        });
+      }
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initInfoPage);
+  } else {
+    initInfoPage();
+  }
+</script>

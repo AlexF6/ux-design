@@ -1,4 +1,5 @@
 ---
+// src/pages/[id]/index.astro
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { Image } from "astro:assets";
 
@@ -12,12 +13,7 @@ export function getStaticPaths() {
 
 const { id } = Astro.params as { id: string };
 const num = parseInt(id, 10);
-
 const formatNum = (n: number) => n.toString().padStart(2, "0");
-
-if (!Number.isInteger(num) || num < 1 || num > 27) {
-  throw new Error(`Invalid image id: ${id}`);
-}
 
 const imageFiles = import.meta.glob<{ default: ImageMetadata }>(
   "/src/assets/webp/*.{jpeg,jpg,png,tiff,webp}",
@@ -27,31 +23,74 @@ const imageFiles = import.meta.glob<{ default: ImageMetadata }>(
 const fileName = `image${formatNum(num)}.webp`;
 const path = Object.keys(imageFiles).find((key) => key.endsWith(fileName));
 
-if (!path) {
-  throw new Error(`Image ${fileName} not found`);
-}
-
+if (!path) throw new Error(`Image ${fileName} not found`);
 const imageAsset = imageFiles[path].default;
+
+const date = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 ---
 
 <BaseLayout title={`Art ${formatNum(num)}`}>
   <main class="l-main">
     <section id="detail-overlay" class="detail-overlay">
-      <section class="c-detail">
-        <div class="c-detail__image-wrapper">
-          <Image
-            src={imageAsset}
-            alt={`Art ${formatNum(num)}`}
-            width={600}
-            height={750}
-            class="u-img-cover"
-            loading="eager"
-            fetchpriority="high"
-          />
+      
+      <div class="c-detail-layout">
+        
+        <div class="c-detail-info">
+          
+          <div class="c-info-block">
+            <span class="u-label">(Description)</span>
+            <p class="u-text-body">
+              A delicate white Generative exploration #{formatNum(num)}.
+            </p>
+          </div>
+
+          <div class="c-info-meta-grid">
+            <div class="c-info-item">
+              <span class="u-label">(Tag)</span>
+              <p>soft, blur, beautiful</p>
+            </div>
+            <div class="c-info-item">
+              <span class="u-label">(Genre)</span>
+              <p>AI Image</p>
+            </div>
+            <div class="c-info-item">
+              <span class="u-label">(Date)</span>
+              <p>{date}</p>
+            </div>
+            <div class="c-info-item">
+              <span class="u-label">(Color)</span>
+              <p>white / black</p>
+            </div>
+          </div>
+
+          <div class="c-info-footer">
+            <a href="/" class="c-back-link" data-astro-prefetch>Back to Home</a>
+          </div>
+
         </div>
 
-        <a href="/" class="c-detail__back">Back to gallery</a>
-      </section>
+        <div class="c-detail-decoration">
+          <svg width="60" height="60" viewBox="0 0 60 60" fill="none" class="c-asterisk">
+            <path d="M30 0V60M0 30H60M8.7868 8.7868L51.2132 51.2132M8.7868 51.2132L51.2132 8.7868" stroke="white" stroke-width="2"/>
+          </svg>
+        </div>
+
+        <div class="c-detail-image-area">
+          <div class="c-detail__image-wrapper">
+            <Image
+              src={imageAsset}
+              alt={`Art ${formatNum(num)}`}
+              width={900}
+              height={1125}
+              class="u-img-cover"
+              loading="eager"
+              fetchpriority="high"
+            />
+          </div>
+        </div>
+
+      </div>
+
     </section>
   </main>
 </BaseLayout>
@@ -67,93 +106,150 @@ const imageAsset = imageFiles[path].default;
     to   { transform: translateY(-100%); }
   }
 
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(180deg); }
+  }
+
   .detail-overlay {
-    position: fixed;
-    inset: 0;
-    background-color: var(--system-background-color);
+    position: fixed; inset: 0;
+    background-color: #111;
     z-index: 50;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     transform: translateY(100%);
+    overflow-y: auto;
   }
 
   .detail-overlay.is-entering {
-    animation: slide-in-up 2s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+    animation: slide-in-up 1.2s cubic-bezier(0.19, 1, 0.22, 1) forwards;
   }
 
   .detail-overlay.is-leaving {
-    animation: slide-out-up 2s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+    animation: slide-out-up 0.6s cubic-bezier(0.19, 1, 0.22, 1) forwards;
   }
 
-  .c-detail {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 60px 20px;
+  .c-detail-layout {
+    display: grid;
+    grid-template-columns: 1fr auto 1.2fr;
     width: 100%;
     height: 100%;
-    justify-content: center;
+    min-height: 100vh;
+    max-width: 1800px;
+    margin: 0 auto;
+    padding: 100px var(--app-grid-padding) 40px;
+    box-sizing: border-box;
+    align-items: center;
+    gap: 60px;
+  }
+
+  .c-detail-info {
+    display: flex; flex-direction: column; justify-content: center;
+    max-width: 480px;
+  }
+
+  .c-info-block { margin-bottom: 60px; }
+
+  .u-label {
+    display: block; font-size: 11px; opacity: 0.5; margin-bottom: 8px;
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+
+  .u-text-body {
+    font-size: 14px; line-height: 1.5; opacity: 0.9; margin: 0;
+    max-width: 400px;
+  }
+
+  .c-info-meta-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 40px 20px;
+    margin-bottom: 80px;
+  }
+
+  .c-info-item p {
+    margin: 0; font-size: 13px; text-transform: capitalize;
+  }
+
+  .c-back-link {
+    text-decoration: none; color: white; font-size: 13px;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    border-bottom: 1px solid rgba(255,255,255,0.3);
+    padding-bottom: 4px; transition: opacity 0.3s, border-color 0.3s;
+  }
+  .c-back-link:hover { opacity: 0.7; border-color: rgba(255,255,255,0.8); }
+
+  .c-detail-decoration {
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0.8;
+  }
+  .c-asterisk {
+    animation: spin 10s linear infinite;
+  }
+
+  .c-detail-image-area {
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: flex-end;
   }
 
   .c-detail__image-wrapper {
     width: 100%;
-    max-width: 600px;
+    max-height: 80vh; 
     aspect-ratio: 4 / 5;
     overflow: hidden;
-    border-radius: 4px;
-    background: #111;
-    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    background: #000;
   }
 
-  .u-img-cover {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
+  .u-img-cover { width: 100%; height: 100%; object-fit: cover; }
 
-  .c-detail__back {
-    margin-top: 30px;
-    text-decoration: none;
-    font-size: 14px;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: white;
-    opacity: 0.7;
-    transition: opacity 0.3s;
-  }
+  @media (max-width: 900px) {
+    .c-detail-layout {
+      display: flex; flex-direction: column-reverse;
+      padding: 80px 20px 40px;
+      gap: 40px;
+      height: auto;
+    }
 
-  .c-detail__back:hover {
-    opacity: 1;
+    .c-detail-decoration { display: none; }
+    
+    .c-detail-image-area { justify-content: center; }
+    .c-detail__image-wrapper { max-height: 60vh; width: 100%; }
+    
+    .c-detail-info { max-width: 100%; }
+    .c-info-block, .c-info-meta-grid { margin-bottom: 40px; }
   }
 </style>
 
 <script>
-  const overlay = document.getElementById('detail-overlay');
+  function initDetailPage() {
+    const overlay = document.getElementById('detail-overlay');
 
-  if (overlay) {
-    requestAnimationFrame(() => {
-      overlay.classList.add('is-entering');
-    });
-
-    const backLink = document.querySelector('.c-detail__back');
-
-    if (backLink) {
-      backLink.addEventListener('click', (event) => {
-        event.preventDefault();
-
-        const targetHref = (backLink as HTMLAnchorElement).href || '/';
-
-        overlay.classList.remove('is-entering');
-        overlay.classList.add('is-leaving');
-
-        const handleAnimationEnd = () => {
-          overlay.removeEventListener('animationend', handleAnimationEnd);
-          window.location.href = targetHref;
-        };
-
-        overlay.addEventListener('animationend', handleAnimationEnd);
+    if (overlay) {
+      requestAnimationFrame(() => {
+        overlay.classList.add('is-entering');
       });
+
+      const backLink = document.querySelector('.c-back-link');
+
+      if (backLink) {
+        backLink.addEventListener('click', (event) => {
+          event.preventDefault();
+          
+          const targetHref = (backLink as HTMLAnchorElement).href || '/';
+
+          overlay.classList.remove('is-entering');
+          overlay.classList.add('is-leaving');
+
+          const handleAnimationEnd = () => {
+            overlay.removeEventListener('animationend', handleAnimationEnd);
+            window.location.href = targetHref;
+          };
+
+          overlay.addEventListener('animationend', handleAnimationEnd);
+        });
+      }
     }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initDetailPage);
+  } else {
+    initDetailPage();
   }
 </script>
