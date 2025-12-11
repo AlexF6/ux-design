@@ -1,4 +1,5 @@
 ---
+// src/components/Gallery.astro
 import { Image } from 'astro:assets';
 
 interface Props {
@@ -18,13 +19,12 @@ const getImage = (num: number) => {
   }
   return imageFiles[path].default;
 };
-
 ---
 
 <div class="c-gallery">
   {items.map((num, index) => {
     const imageAsset = getImage(num);
-    const isAboveFold = index === 0;
+    const isAboveFold = index < 2; 
     const delay = 280 + index * 40;
 
     return (

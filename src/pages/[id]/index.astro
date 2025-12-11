@@ -1,7 +1,6 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { Image } from "astro:assets";
-import Header from "../../components/Header.astro";
 
 export function getStaticPaths() {
   const totalImages = 27;
@@ -36,7 +35,6 @@ const imageAsset = imageFiles[path].default;
 ---
 
 <BaseLayout title={`Art ${formatNum(num)}`}>
-  <Header/>
   <main class="l-main">
     <section id="detail-overlay" class="detail-overlay">
       <section class="c-detail">
@@ -59,8 +57,6 @@ const imageAsset = imageFiles[path].default;
 </BaseLayout>
 
 <style>
-  
-
   @keyframes slide-in-up {
     from { transform: translateY(100%); }
     to   { transform: translateY(0); }
@@ -71,8 +67,6 @@ const imageAsset = imageFiles[path].default;
     to   { transform: translateY(-100%); }
   }
 
-  
-
   .detail-overlay {
     position: fixed;
     inset: 0;
@@ -81,8 +75,6 @@ const imageAsset = imageFiles[path].default;
     display: flex;
     align-items: center;
     justify-content: center;
-
-    
     transform: translateY(100%);
   }
 
@@ -93,8 +85,6 @@ const imageAsset = imageFiles[path].default;
   .detail-overlay.is-leaving {
     animation: slide-out-up 2s cubic-bezier(0.19, 1, 0.22, 1) forwards;
   }
-
-  
 
   .c-detail {
     display: flex;
