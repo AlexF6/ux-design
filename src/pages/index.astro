@@ -1,5 +1,5 @@
 ---
-// src/pages/index.astro
+
 import BaseLayout from "../layouts/BaseLayout.astro"
 import Header from "../components/Header.astro"
 import ScrollWheel from "../components/ScrollWheel.astro"
@@ -15,12 +15,18 @@ const images = Array.from({ length: 27 }, (_, i) => i + 1);
 
   <main class="l-main">
     
-    <div class="l-main__left">
+    <div 
+      class="l-main__left js-fade-in"
+      style="--delay: 140ms"
+    >
       <ScrollWheel items={images} />
       <InfoGrid />
     </div>
 
-    <div class="l-main__right">
+    <div 
+      class="l-main__right"
+      style="--delay: 240ms"
+    >
       <Gallery items={images} />
     </div>
 

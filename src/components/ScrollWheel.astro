@@ -1,5 +1,5 @@
 ---
-// src/components/ScrollWheel.astro
+
 interface Props {
   items: number[];
 }
@@ -11,10 +11,8 @@ const formatNum = (num: number) => num.toString().padStart(2, '0');
 <span class="c-center-label-2">(Image)</span>
 
 <div class="c-center-decoration">
-  
   <div class="c-wheel">
     <div class="c-wheel__line"></div>
-    
     <div class="c-wheel__window">
       <div class="c-wheel__strip js-wheel-strip">
         {items.map((num) => (
@@ -30,37 +28,62 @@ const formatNum = (num: number) => num.toString().padStart(2, '0');
 <script>
   const wheelStrip = document.querySelector('.js-wheel-strip') as HTMLElement;
   const wheelItems = document.querySelectorAll('.c-wheel__item');
+  const wheelContainer = document.querySelector('.c-wheel') as HTMLElement;
   const galleryItems = document.querySelectorAll('.js-gallery-item');
   
   let pixelsPerIndex = 0;
   let wheelItemHeight = 0;
+  let centerOffset = 0;
 
   function updateMetrics() {
     if (galleryItems.length > 1 && wheelItems.length > 0) {
-      const firstRect = galleryItems[0].getBoundingClientRect();
-      const secondRect = galleryItems[1].getBoundingClientRect();
-      pixelsPerIndex = secondRect.top - firstRect.top;
-      wheelItemHeight = (wheelItems[0] as HTMLElement).offsetHeight;
+      const firstItem = galleryItems[0] as HTMLElement;
+      const secondItem = galleryItems[1] as HTMLElement;
+      pixelsPerIndex = secondItem.offsetTop - firstItem.offsetTop;
+      const itemStyle = window.getComputedStyle(wheelItems[0]);
+      wheelItemHeight = parseFloat(itemStyle.height);
+      const containerHeight = wheelContainer.offsetHeight;
+      centerOffset = (containerHeight / 2) - (wheelItemHeight / 2);
     }
   }
 
   function rafLoop() {
-    if (!pixelsPerIndex || !wheelStrip) return;
+    if (!pixelsPerIndex || !wheelStrip || galleryItems.length === 0) return;
 
     const viewportCenter = window.innerHeight / 2;
-    const firstItem = galleryItems[0];
-    const firstRect = firstItem.getBoundingClientRect();
     
-    const firstItemCenter = firstRect.top + (firstRect.height / 2);
-    const distFromCenter = firstItemCenter - viewportCenter;
+    
+    let closestIndex = 0;
+    let minDiff = Infinity;
 
-    let rawIndex = (distFromCenter * -1) / pixelsPerIndex;
+    galleryItems.forEach((item, i) => {
+      
+      
+      const rect = item.getBoundingClientRect();
+      const itemCenter = rect.top + (rect.height / 2);
+      const diff = Math.abs(itemCenter - viewportCenter);
+      
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestIndex = i;
+      }
+    });
+
+    const closestItem = galleryItems[closestIndex];
+    const rect = closestItem.getBoundingClientRect();
+    const itemCenter = rect.top + (rect.height / 2);
+    const distFromCenter = itemCenter - viewportCenter;
+    
+    
+    let rawIndex = closestIndex - (distFromCenter / pixelsPerIndex);
     const maxIndex = galleryItems.length - 1;
     rawIndex = Math.max(0, Math.min(rawIndex, maxIndex));
 
-    const translateY = rawIndex * wheelItemHeight * -1;
+    
+    const translateY = (rawIndex * wheelItemHeight * -1) + centerOffset;
     wheelStrip.style.transform = `translate3d(0, ${translateY}px, 0)`;
 
+    
     wheelItems.forEach((item, i) => {
       const distance = Math.abs(i - rawIndex);
       const el = item as HTMLElement;
@@ -92,6 +115,7 @@ const formatNum = (num: number) => num.toString().padStart(2, '0');
   window.addEventListener('resize', updateMetrics);
 </script>
 
+
 <style>
   .c-center-decoration {
     position: absolute; top: 50%; left: 50%;
@@ -119,14 +143,20 @@ const formatNum = (num: number) => num.toString().padStart(2, '0');
     height: 100%;
     opacity: 0.6;
     background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.5) 20%, rgba(255,255,255,0.5) 80%, transparent);
-    /* margin-right: 20px; */
   }
 
   .c-wheel__window { height: 100%; position: relative; margin-top: -0.2em; margin-left: 80px; }
   .c-wheel__strip { will-change: transform; display: flex; flex-direction: column; }
 
   .c-wheel__item {
-    height: 3.5rem; font-size: 2.5rem; line-height: 4rem; 
+    height: 3.5rem; 
+    font-size: 2.5rem; 
+    
+    
+    display: flex;
+    align-items: center;
+    line-height: 1; 
+
     font-weight: 300; color: rgba(255, 255, 255, 0.2);
     font-variant-numeric: tabular-nums; transform-origin: left center;
     white-space: nowrap;

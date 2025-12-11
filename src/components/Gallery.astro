@@ -1,27 +1,53 @@
 ---
+import { Image } from 'astro:assets';
+
 interface Props {
   items: number[];
 }
 
 const { items } = Astro.props;
 const formatNum = (num: number) => num.toString().padStart(2, '0');
+
+const imageFiles = import.meta.glob<{ default: ImageMetadata }>('/src/assets/webp/*.{jpeg,jpg,png,tiff,webp}', { eager: true });
+
+const getImage = (num: number) => {
+  const fileName = `image${formatNum(num)}.webp`;
+  const path = Object.keys(imageFiles).find((key) => key.endsWith(fileName));
+  if (!path) {
+    throw new Error(`Image ${fileName} not found in src/assets/webp/`);
+  }
+  return imageFiles[path].default;
+};
+
 ---
 
 <div class="c-gallery">
-  {items.map((num) => (
-    <a href={`/${formatNum(num)}/`} class="c-gallery__item js-gallery-item">
-      <div class="c-gallery__image-wrapper js-wave-wrapper">
-        <img 
-          src={`/webp/image${formatNum(num)}.webp`} 
-          alt={`Art ${formatNum(num)}`}
-          loading="lazy"
-          width="600"
-          height="750"
-        />
-      </div>
-      <span class="c-gallery__number-mobile">{formatNum(num)}</span>
-    </a>
-  ))}
+  {items.map((num, index) => {
+    const imageAsset = getImage(num);
+    const isAboveFold = index === 0;
+    const delay = 280 + index * 40;
+
+    return (
+      <a 
+        href={`/${formatNum(num)}/`} 
+        class="c-gallery__item js-gallery-item js-fade-in"
+        style={`--delay: ${delay}ms`}
+      >
+        <div class="c-gallery__image-wrapper js-wave-wrapper">
+          <Image 
+            src={imageAsset}
+            alt={`Art ${formatNum(num)}`}
+            width={600}
+            height={750}
+            class="u-img-cover"
+            loading={isAboveFold ? "eager" : "lazy"}
+            fetchpriority={isAboveFold ? "high" : "auto"}
+          />
+        </div>
+        <span class="c-gallery__number-mobile">{formatNum(num)}</span>
+      </a>
+    );
+  })}
 </div>
 
 <style>
@@ -52,17 +78,17 @@ const formatNum = (num: number) => num.toString().padStart(2, '0');
     transform: translateZ(0);
   }
   
-  .c-gallery__image-wrapper img { 
+  .c-gallery__image-wrapper :global(img) { 
     width: 100%; 
     height: 100%; 
     object-fit: cover; 
     display: block; 
     opacity: 1;
-    transition: opacity 0.5s ease;
+    transition: opacity 0.3s ease; 
     will-change: opacity;
   }
 
-  .c-gallery__image-wrapper.is-loaded img {
+  .c-gallery__image-wrapper.is-loaded :global(img) {
     opacity: 0;
   }
   
@@ -158,6 +184,7 @@ const formatNum = (num: number) => num.toString().padStart(2, '0');
     material!: THREE.ShaderMaterial;
     observer!: ResizeObserver;
     animationId: number | null = null;
+    isDestroyed: boolean = false;
     
     state = { mouseX: 0, mouseY: 0, intensity: 0 };
     target = { mouseX: 0, mouseY: 0, intensity: 0 };
@@ -166,14 +193,18 @@ const formatNum = (num: number) => num.toString().padStart(2, '0');
       this.container = container;
       this.image = container.querySelector('img') as HTMLImageElement;
       if (this.image) {
-        this.init().catch(err => console.error(err));
+        this.init();
       }
     }
 
     async init() {
+      if (this.isDestroyed) return;
+
       if (!this.image.complete) {
         await new Promise((resolve) => { this.image.onload = resolve; });
       }
+
+      if (this.isDestroyed) return;
 
       const rect = this.container.getBoundingClientRect();
       const width = rect.width || 600;
@@ -184,9 +215,6 @@ const formatNum = (num: number) => num.toString().padStart(2, '0');
       const fov = 80;
       this.camera = new THREE.PerspectiveCamera(fov, width / height, 0.01, 10);
       
-      // CALCULO EXACTO DE LA DISTANCIA Z:
-      // Para que un plano de altura 2.0 encaje exactamente en la vista vertical:
-      // dist = (height / 2) / tan(fov / 2)
       const fovRad = (fov * Math.PI) / 180;
       const dist = 1 / Math.tan(fovRad / 2);
       this.camera.position.z = dist;
@@ -216,7 +244,10 @@ const formatNum = (num: number) => num.toString().padStart(2, '0');
       this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       
       this.container.appendChild(this.renderer.domElement);
-      this.container.classList.add('is-loaded');
+      
+      requestAnimationFrame(() => {
+        if(!this.isDestroyed) this.container.classList.add('is-loaded');
+      });
 
       this.addListeners();
       this.animate();
@@ -278,6 +309,8 @@ const formatNum = (num: number) => num.toString().padStart(2, '0');
     }
 
     animate = () => {
+      if (this.isDestroyed) return;
+      
       this.animationId = requestAnimationFrame(this.animate);
 
       this.state.mouseX = this.lerp(this.state.mouseX, this.target.mouseX, CONFIG.speed);
@@ -295,6 +328,7 @@ const formatNum = (num: number) => num.toString().padStart(2, '0');
     }
 
     dispose() {
+      this.isDestroyed = true;
       if (this.animationId) cancelAnimationFrame(this.animationId);
       if (this.observer) this.observer.disconnect();
       
@@ -302,30 +336,69 @@ const formatNum = (num: number) => num.toString().padStart(2, '0');
       this.container.removeEventListener('mouseenter', this.handleMouseEnter);
       this.container.removeEventListener('mouseleave', this.handleMouseLeave);
       
+      this.container.classList.remove('is-loaded');
+
       if (this.renderer) {
         this.renderer.dispose();
         const canvas = this.container.querySelector('canvas');
         if (canvas) canvas.remove();
       }
       
-      if (this.material) this.material.dispose();
-      this.container.classList.remove('is-loaded');
+      if (this.material) {
+        if(this.material.uniforms.u_texture.value) {
+            this.material.uniforms.u_texture.value.dispose();
+        }
+        this.material.dispose();
+      }
+      
+      if (this.mesh) {
+        this.mesh.geometry.dispose();
+      }
     }
   }
 
-  const instances: WaveEffect[] = [];
+  const instanceMap = new WeakMap();
+  let intersectionObserver: IntersectionObserver;
 
   function cleanup() {
-    instances.forEach(instance => instance.dispose());
-    instances.length = 0;
+    if (intersectionObserver) {
+      intersectionObserver.disconnect();
+    }
+    document.querySelectorAll('.js-wave-wrapper').forEach(el => {
+      const instance = instanceMap.get(el);
+      if (instance) {
+        instance.dispose();
+        instanceMap.delete(el);
+      }
+    });
   }
 
   function init() {
     cleanup();
+    
+    intersectionObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        const el = entry.target as HTMLElement;
+        
+        if (entry.isIntersecting) {
+          if (!instanceMap.has(el)) {
+            const instance = new WaveEffect(el);
+            instanceMap.set(el, instance);
+          }
+        } else {
+          const instance = instanceMap.get(el);
+          if (instance) {
+            instance.dispose();
+            instanceMap.delete(el);
+          }
+        }
+      });
+    }, {
+      rootMargin: '200px 0px'
+    });
+
     document.querySelectorAll('.js-wave-wrapper').forEach(el => {
-      if (!el.querySelector('canvas')) {
-        instances.push(new WaveEffect(el as HTMLElement));
-      }
+      intersectionObserver.observe(el);
     });
   }
 

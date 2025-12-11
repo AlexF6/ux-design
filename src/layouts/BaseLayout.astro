@@ -20,6 +20,10 @@ const { title } = Astro.props;
     <script>
       import Lenis from 'lenis'
 
+      if (history.scrollRestoration) {
+        history.scrollRestoration = 'manual';
+      }
+
       const lenis = new Lenis({
         duration: 1.2,
         easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
@@ -27,6 +31,8 @@ const { title } = Astro.props;
         gestureOrientation: 'vertical',
         smoothWheel: true,
       })
+      
+      window.scrollTo(0, 0);
 
       function raf(time: number) {
         lenis.raf(time)
@@ -34,6 +40,11 @@ const { title } = Astro.props;
       }
 
       requestAnimationFrame(raf)
+      
+      window.addEventListener('load', () => {
+        document.body.classList.add('is-loaded');
+        lenis.resize(); 
+      });
     </script>
   </body>
 </html>
