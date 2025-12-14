@@ -1,44 +1,84 @@
-# Astro Starter Kit: Minimal
+# SPOT-AI
 
-```sh
-pnpm create astro@latest -- --template minimal
-```
+**SPOT-AI** es una galería visual experimental construida con **Astro** enfocada en rendimiento, animaciones suaves y una estética minimalista. El proyecto explora navegación tipo SPA, carga optimizada de imágenes y micro-interacciones para mostrar obras visuales generadas con IA.
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+**Demo:** [https://ux-design-peach.vercel.app](https://ux-design-peach.vercel.app)
 
-## 🚀 Project Structure
+---
 
-Inside of your Astro project, you'll see the following folders and files:
+## Características principales
+
+* **Astro + Vite** para máximo rendimiento
+* **Galería dinámica** con rutas estáticas (`/01` → `/27`)
+* Navegación fluida tipo SPA (sin recargas completas)
+* Efectos visuales y animaciones progresivas
+* Imágenes optimizadas en **WebP**
+* Arquitectura limpia y escalable
+
+---
+
+## Tecnologías
+
+* **Framework:** Astro
+* **Lenguajes:** TypeScript, HTML, CSS
+* **Build tool:** Vite
+* **Gestor de paquetes:** pnpm
+* **Assets:** WebP optimizado
+
+---
+
+## Estructura del proyecto (simplificada)
 
 ```text
-/
-├── public/
-├── src/
-│   └── pages/
-│       └── index.astro
-└── package.json
+src/
+├── assets/webp        # Imágenes originales
+├── components         # Componentes reutilizables (Gallery, Header, ScrollWheel)
+├── layouts            # Layout base
+├── pages              # Rutas estáticas y dinámicas
+│   ├── index.astro
+│   ├── info.astro
+│   └── [id]/index.astro
+├── styles             # Estilos globales
 ```
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+El directorio `dist/` contiene el resultado del build final para producción.
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
+---
 
-Any static assets, like images, can be placed in the `public/` directory.
+## Scripts disponibles
 
-## 🧞 Commands
+```bash
+pnpm install   # Instalar dependencias
+pnpm dev       # Servidor de desarrollo
+pnpm build     # Build de producción
+pnpm preview   # Previsualizar el build
+```
 
-All commands are run from the root of the project, from a terminal:
+---
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `pnpm install`             | Installs dependencies                            |
-| `pnpm dev`             | Starts local dev server at `localhost:4321`      |
-| `pnpm build`           | Build your production site to `./dist/`          |
-| `pnpm preview`         | Preview your build locally, before deploying     |
-| `pnpm astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `pnpm astro -- --help` | Get help using the Astro CLI                     |
+## Concepto del proyecto
 
-## 👀 Want to learn more?
+SPOT-AI nace como un **playground visual** para experimentar con:
 
+* Presentación de arte generado por IA
+* Navegación sin fricción
+* UX minimalista inspirada en galerías digitales
+* Optimización extrema de imágenes y carga
 
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+Es un proyecto orientado a **exploración creativa y técnica**, más que a un producto comercial.
+
+---
+
+## Roadmap / Ideas futuras
+
+* Filtros o categorías
+* Transiciones más avanzadas (WebGL / Three.js)
+* Modo oscuro/claro
+* Mejoras específicas para mobile
+
+---
+
+* GitHub: [https://github.com/AlexF6](https://github.com/AlexF6)
+
+---
+
