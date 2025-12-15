@@ -79,6 +79,5 @@ Es un proyecto orientado a **exploración creativa y técnica**, más que a un p
 ---
 
 * GitHub: [https://github.com/AlexF6](https://github.com/AlexF6)
-
 ---
 
