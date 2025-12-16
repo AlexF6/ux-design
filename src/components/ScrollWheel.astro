@@ -55,7 +55,6 @@ const formatNum = (num: number) => num.toString().padStart(2, '0');
         this.wheelItems.length === 0 ||
         this.galleryItems.length === 0
       ) {
-        // Nothing to do on this page
         return;
       }
 
@@ -159,7 +158,6 @@ const formatNum = (num: number) => num.toString().padStart(2, '0');
       wheelInstance = null;
     }
 
-    // Only create if we’re actually on a page that has the wheel
     const wheelRoot = document.querySelector('.c-wheel');
     if (!wheelRoot) return;
 

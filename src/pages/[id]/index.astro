@@ -226,10 +226,8 @@ const date = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numer
 
     if (!overlay) return;
 
-    // Reset classes in case we're coming back from another image
     overlay.classList.remove('is-leaving');
 
-    // Kick the enter animation on the next frame
     requestAnimationFrame(() => {
       overlay.classList.add('is-entering');
     });
@@ -247,7 +245,7 @@ const date = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numer
 
       const handleAnimationEnd = () => {
         overlay.removeEventListener('animationend', handleAnimationEnd);
-        navigate(targetHref); // use ClientRouter SPA nav
+        navigate(targetHref);
       };
 
       overlay.addEventListener('animationend', handleAnimationEnd);
@@ -255,19 +253,16 @@ const date = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numer
 
     backLink.addEventListener('click', handleClick);
 
-    // expose cleanup so we don't accumulate listeners between navigations
     cleanup = () => {
       backLink.removeEventListener('click', handleClick);
       cleanup = null;
     };
   }
 
-  // Run on initial load *and* every SPA navigation
   document.addEventListener('astro:page-load', () => {
     initDetailPage();
   });
 
-  // Clean up before Astro swaps out this page
   document.addEventListener('astro:before-swap', () => {
     if (cleanup) {
       cleanup();
